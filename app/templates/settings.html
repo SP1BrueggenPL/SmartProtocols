@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}Ustawienia{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <h4 class="mb-0 fw-bold"><i class="bi bi-gear me-2 text-primary"></i>Ustawienia systemu</h4>
+</div>
+
+<div class="row g-4">
+
+  {# Email settings #}
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-envelope-gear me-2 text-primary"></i>Konfiguracja email (SMTP)
+      </div>
+      <div class="card-body">
+        <form method="post">
+          <input type="hidden" name="action" value="email_settings">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">
+              Adres księgowości <span class="text-danger">*</span>
+            </label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-building"></i></span>
+              <input type="email" name="accounting_email" class="form-control"
+                     placeholder="ksiegowosc@brueggen.pl"
+                     value="{{ settings.get('accounting_email', '') }}">
+            </div>
+            <div class="form-text">Protokoły będą wysyłane na ten adres wraz z adresem przyjmującego.</div>
+          </div>
+          <hr>
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label fw-semibold">Serwer SMTP</label>
+              <input type="text" name="smtp_host" class="form-control"
+                     placeholder="smtp.example.com"
+                     value="{{ settings.get('smtp_host', '') }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Port</label>
+              <input type="number" name="smtp_port" class="form-control"
+                     placeholder="587"
+                     value="{{ settings.get('smtp_port', '587') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Login SMTP</label>
+              <input type="text" name="smtp_user" class="form-control"
+                     placeholder="it@brueggen.pl"
+                     autocomplete="off"
+                     value="{{ settings.get('smtp_user', '') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Hasło SMTP</label>
+              <input type="password" name="smtp_pass" class="form-control"
+                     placeholder="••••••••"
+                     autocomplete="new-password"
+                     value="{{ settings.get('smtp_pass', '') }}">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label fw-semibold">Adres nadawcy (From)</label>
+              <input type="email" name="smtp_from" class="form-control"
+                     placeholder="it@brueggen.pl"
+                     value="{{ settings.get('smtp_from', '') }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Nazwa nadawcy</label>
+              <input type="text" name="smtp_from_name" class="form-control"
+                     placeholder="Dział IT"
+                     value="{{ settings.get('smtp_from_name', '') }}">
+            </div>
+            <div class="col-12">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="smtp_use_tls"
+                       id="smtp_use_tls" value="1"
+                       {% if settings.get('smtp_use_tls', '1') == '1' %}checked{% endif %}>
+                <label class="form-check-label" for="smtp_use_tls">
+                  Używaj STARTTLS (port 587) — wyłącz dla SSL/TLS (port 465)
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-save me-1"></i>Zapisz ustawienia
+            </button>
+          </div>
+        </form>
+
+        <hr>
+        <form method="post" class="d-flex gap-2 align-items-end">
+          <input type="hidden" name="action" value="test_email">
+          <div class="flex-grow-1">
+            <label class="form-label fw-semibold small">Testowy email</label>
+            <input type="email" name="test_email" class="form-control form-control-sm"
+                   placeholder="twoj@adres.pl">
+          </div>
+          <button type="submit" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-send me-1"></i>Wyślij test
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# Users #}
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-people me-2 text-primary"></i>Użytkownicy IT
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Imię i nazwisko</th>
+              <th>Login</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr>
+              <td>
+                <strong>{{ user.full_name }}</strong>
+                {% if user.id == session.user_id %}
+                  <span class="badge bg-primary ms-1 small">Ty</span>
+                {% endif %}
+              </td>
+              <td class="text-muted font-monospace small">{{ user.username }}</td>
+              <td>
+                {% if user.is_active %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">Aktywny</span>
+                {% else %}
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Nieaktywny</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-three-dots"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" href="#"
+                         onclick="showChangePassword({{ user.id }}, '{{ user.full_name }}')">
+                        <i class="bi bi-key me-2"></i>Zmień hasło
+                      </a>
+                    </li>
+                    {% if user.id != session.user_id %}
+                    <li>
+                      <form method="post" class="m-0">
+                        <input type="hidden" name="action" value="toggle_user">
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <button type="submit" class="dropdown-item text-{{ 'danger' if user.is_active else 'success' }}">
+                          <i class="bi bi-{{ 'person-slash' if user.is_active else 'person-check' }} me-2"></i>
+                          {{ 'Dezaktywuj' if user.is_active else 'Aktywuj' }}
+                        </button>
+                      </form>
+                    </li>
+                    {% endif %}
+                  </ul>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer bg-white">
+        <button class="btn btn-sm btn-outline-primary" onclick="toggleAddUser()">
+          <i class="bi bi-person-plus me-1"></i>Dodaj użytkownika
+        </button>
+        <div id="addUserForm" style="display:none" class="mt-3">
+          <form method="post">
+            <input type="hidden" name="action" value="add_user">
+            <div class="row g-2">
+              <div class="col-12">
+                <input type="text" name="new_full_name" class="form-control form-control-sm"
+                       placeholder="Imię i nazwisko" required>
+              </div>
+              <div class="col-6">
+                <input type="text" name="new_username" class="form-control form-control-sm"
+                       placeholder="Login" required autocomplete="off">
+              </div>
+              <div class="col-6">
+                <input type="password" name="new_password" class="form-control form-control-sm"
+                       placeholder="Hasło" required autocomplete="new-password">
+              </div>
+              <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary">
+                  <i class="bi bi-check me-1"></i>Dodaj
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAddUser()">
+                  Anuluj
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Change password modal #}
+<div class="modal fade" id="changePwModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold">Zmiana hasła</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post">
+        <input type="hidden" name="action" value="change_password">
+        <input type="hidden" name="user_id" id="changePwUserId">
+        <div class="modal-body">
+          <p class="text-muted small" id="changePwName"></p>
+          <input type="password" name="new_password" class="form-control"
+                 placeholder="Nowe hasło" required autocomplete="new-password">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Anuluj</button>
+          <button type="submit" class="btn btn-primary btn-sm">Zmień hasło</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleAddUser() {
+  const el = document.getElementById('addUserForm');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+function showChangePassword(userId, fullName) {
+  document.getElementById('changePwUserId').value = userId;
+  document.getElementById('changePwName').textContent = fullName;
+  new bootstrap.Modal(document.getElementById('changePwModal')).show();
+}
+</script>
+{% endblock %}

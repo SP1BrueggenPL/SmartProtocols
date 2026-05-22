@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block title %}{{ document.doc_number }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div class="d-flex align-items-center gap-3">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h4 class="mb-0 fw-bold">{{ document.doc_number }}</h4>
+      <small class="text-muted">
+        Protokół wydania / zwrotu –
+        {% if document.doc_type == 'office' %}Sprzęt Office
+        {% elif document.doc_type == 'telefon' %}Telefon
+        {% else %}Sprzęt Produkcja{% endif %}
+      </small>
+    </div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    {% if not document.sig_issuer %}
+    <a href="{{ url_for('document_edit', doc_id=document.id) }}" class="btn btn-outline-secondary">
+      <i class="bi bi-pencil me-1"></i>Edytuj
+    </a>
+    <a href="{{ url_for('document_sign', doc_id=document.id) }}" class="btn btn-success">
+      <i class="bi bi-pen me-1"></i>Podpisz
+    </a>
+    {% endif %}
+    <a href="{{ url_for('document_pdf', doc_id=document.id) }}" class="btn btn-outline-danger" target="_blank">
+      <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+    </a>
+    {% if document.sig_issuer %}
+    <form method="post" action="{{ url_for('document_send', doc_id=document.id) }}" class="m-0">
+      <button type="submit" class="btn btn-primary"
+              onclick="return confirm('Wysłać protokół do {{ document.receiver_email }} i na adres księgowości?')">
+        <i class="bi bi-send me-1"></i>
+        {% if document.email_sent_at %}Wyślij ponownie{% else %}Wyślij email{% endif %}
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{# Status ribbon #}
+<div class="mb-4 d-flex gap-2 align-items-center flex-wrap">
+  {% if document.email_sent_at %}
+    <span class="badge fs-6 bg-info-subtle text-info border border-info-subtle px-3 py-2">
+      <i class="bi bi-envelope-check me-1"></i>Wysłany {{ document.email_sent_at[:16].replace('T',' ') }}
+    </span>
+  {% elif document.sig_issuer %}
+    <span class="badge fs-6 bg-success-subtle text-success border border-success-subtle px-3 py-2">
+      <i class="bi bi-pen me-1"></i>Podpisany {{ document.signed_at[:16].replace('T',' ') if document.signed_at else '' }}
+    </span>
+  {% else %}
+    <span class="badge fs-6 bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2">
+      <i class="bi bi-pencil me-1"></i>Roboczy – oczekuje na podpis
+    </span>
+  {% endif %}
+
+  {% if document.operation == 'wydanie' %}
+    <span class="badge fs-6 bg-success-subtle text-success border border-success-subtle px-3 py-2">
+      <i class="bi bi-box-arrow-up-right me-1"></i>Wydanie
+    </span>
+  {% else %}
+    <span class="badge fs-6 bg-warning-subtle text-warning border border-warning-subtle px-3 py-2">
+      <i class="bi bi-box-arrow-in-down-left me-1"></i>Zwrot
+    </span>
+  {% endif %}
+</div>
+
+<div class="row g-4">
+  {# Left column: document details #}
+  <div class="col-lg-8">
+
+    {# Header info #}
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-info-circle me-2 text-primary"></i>Dane dokumentu
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label class="form-label text-muted small mb-0">Przekazujący</label>
+            <div class="fw-semibold">{{ document.issuer_name }}</div>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label text-muted small mb-0">Przyjmujący</label>
+            <div class="fw-semibold">{{ document.receiver_name }}</div>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label text-muted small mb-0">Email przyjmującego</label>
+            <div><a href="mailto:{{ document.receiver_email }}">{{ document.receiver_email }}</a></div>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label text-muted small mb-0">Data wydania / zwrotu</label>
+            <div class="fw-semibold">{{ document.doc_date }}</div>
+          </div>
+          {% if document.network_name %}
+          <div class="col-sm-6">
+            <label class="form-label text-muted small mb-0">Nazwa sieciowa</label>
+            <div class="fw-semibold font-monospace">{{ document.network_name }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# Equipment section #}
+    {% if document.doc_type != 'telefon' %}
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-pc-display me-2 text-primary"></i>Wykaz sprzętu
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Sprzęt</th>
+              <th>Producent / Model</th>
+              <th>Nr seryjny</th>
+              <th class="text-center">Ilość</th>
+              <th>Nr wewnętrzny</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+            <tr>
+              <td class="fw-semibold">{{ item.equipment_type or '—' }}</td>
+              <td>{{ item.manufacturer_model or '—' }}</td>
+              <td class="font-monospace small">{{ item.serial_number or '—' }}</td>
+              <td class="text-center">{{ item.quantity or 1 }}</td>
+              <td class="font-monospace small">{{ item.internal_number or '—' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-muted text-center py-3">Brak pozycji</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    {# Phone details #}
+    {% set ph = items[0] if items else none %}
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-phone me-2 text-primary"></i>Dane telefonu
+      </div>
+      <div class="card-body">
+        {% if ph %}
+        <div class="row g-2">
+          {% macro phrow(label, value) %}
+          {% if value %}
+          <div class="col-sm-6">
+            <label class="form-label text-muted small mb-0">{{ label }}</label>
+            <div class="fw-semibold font-monospace small">{{ value }}</div>
+          </div>
+          {% endif %}
+          {% endmacro %}
+          {{ phrow('Rodzaj telefonu', ph.phone_type) }}
+          {{ phrow('Nr IMEI', ph.imei) }}
+          {{ phrow('Nr seryjny', ph.serial_number) }}
+          {{ phrow('Nazwa wewnętrzna', ph.internal_name) }}
+          {{ phrow('Nr telefonu', ph.phone_number) }}
+          {{ phrow('Nr karty SIM', ph.sim_number) }}
+          {{ phrow('PIN telefonu', ph.pin_phone) }}
+          {{ phrow('PIN karty SIM', ph.pin_sim) }}
+          <div class="col-sm-6">
+            <label class="form-label text-muted small mb-0">Akcesoria</label>
+            <div>
+              {% if ph.acc_foil %}<span class="badge bg-secondary me-1">Folia/Szybka</span>{% endif %}
+              {% if ph.acc_case %}<span class="badge bg-secondary me-1">Etui</span>{% endif %}
+              {% if ph.acc_charger %}<span class="badge bg-secondary me-1">Ładowarka</span>{% endif %}
+              {% if ph.acc_headphones %}<span class="badge bg-secondary me-1">Słuchawki</span>{% endif %}
+              {% if not ph.acc_foil and not ph.acc_case and not ph.acc_charger and not ph.acc_headphones %}
+              <span class="text-muted">Brak</span>{% endif %}
+            </div>
+          </div>
+          {% if ph.notes %}
+          <div class="col-12">
+            <label class="form-label text-muted small mb-0">Uwagi</label>
+            <div>{{ ph.notes }}</div>
+          </div>
+          {% endif %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Brak danych telefonu.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  {# Right column: signatures #}
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-pen me-2 text-primary"></i>Podpisy
+      </div>
+      <div class="card-body">
+        <div class="mb-4">
+          <label class="form-label text-muted small mb-2">Podpis przekazującego</label>
+          {% if document.sig_issuer %}
+          <div class="sig-preview border rounded p-1 bg-white">
+            <img src="{{ document.sig_issuer }}" alt="Podpis przekazującego" class="img-fluid">
+          </div>
+          {% else %}
+          <div class="sig-placeholder border rounded d-flex align-items-center justify-content-center text-muted">
+            <div class="text-center">
+              <i class="bi bi-pen d-block fs-4 mb-1 opacity-25"></i>
+              <small>Brak podpisu</small>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label text-muted small mb-2">Podpis przyjmującego</label>
+          {% if document.sig_receiver %}
+          <div class="sig-preview border rounded p-1 bg-white">
+            <img src="{{ document.sig_receiver }}" alt="Podpis przyjmującego" class="img-fluid">
+          </div>
+          {% else %}
+          <div class="sig-placeholder border rounded d-flex align-items-center justify-content-center text-muted">
+            <div class="text-center">
+              <i class="bi bi-pen d-block fs-4 mb-1 opacity-25"></i>
+              <small>Brak podpisu</small>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        {% if not document.sig_issuer %}
+        <a href="{{ url_for('document_sign', doc_id=document.id) }}" class="btn btn-success w-100">
+          <i class="bi bi-pen me-2"></i>Złóż podpisy
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

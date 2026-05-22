@@ -1,0 +1,240 @@
+/* ── Brand variables (Brüggen Corporate Colors, PPT Master 2024) ─ */
+:root {
+  /* Brand palette */
+  --burgundy:      #651C31;   /* primary brand */
+  --burgundy-dark: #4a1324;   /* hover / dark */
+  --burgundy-light:#f5e8ec;   /* subtle tint */
+  --gold:          #E2BC54;   /* accent / signed */
+  --gold-light:    #fdf6de;
+  --slate:         #7985A2;   /* info / sent */
+  --slate-light:   #e8ebf2;
+  --mauve:         #CC6883;   /* soft accent / draft */
+  --mauve-light:   #faedf1;
+  --charcoal:      #514C51;   /* neutral dark text */
+  --red:           #FF4143;   /* alerts / danger */
+  --surface:       #f8f5f6;   /* page background */
+  --border:        #e0d4d7;
+  --radius:        0.5rem;
+
+  /* ── Bootstrap 5 token overrides ── */
+  --bs-primary:     #651C31;
+  --bs-primary-rgb: 101, 28, 49;
+
+  --bs-success:     #E2BC54;
+  --bs-success-rgb: 226, 188, 84;
+
+  --bs-warning:     #CC6883;
+  --bs-warning-rgb: 204, 104, 131;
+
+  --bs-info:        #7985A2;
+  --bs-info-rgb:    121, 133, 162;
+
+  /* subtle variants (BS 5.3) */
+  --bs-primary-bg-subtle:     #f5e8ec;
+  --bs-primary-text-emphasis: #4a1324;
+  --bs-primary-border-subtle: #d9a9b8;
+
+  --bs-success-bg-subtle:     #fdf6de;
+  --bs-success-text-emphasis: #7a5c10;
+  --bs-success-border-subtle: #f0da8a;
+
+  --bs-warning-bg-subtle:     #faedf1;
+  --bs-warning-text-emphasis: #7a2e45;
+  --bs-warning-border-subtle: #e8b0c0;
+
+  --bs-info-bg-subtle:        #e8ebf2;
+  --bs-info-text-emphasis:    #3a4566;
+  --bs-info-border-subtle:    #b0b9d0;
+
+  /* links */
+  --bs-link-color:       #651C31;
+  --bs-link-hover-color: #4a1324;
+  --bs-link-color-rgb:   101, 28, 49;
+}
+
+/* ── Button – primary (Burgundy) ────────────────────────── */
+.btn-primary {
+  --bs-btn-bg:                 #651C31;
+  --bs-btn-border-color:       #651C31;
+  --bs-btn-hover-bg:           #4a1324;
+  --bs-btn-hover-border-color: #4a1324;
+  --bs-btn-active-bg:          #3a0e1b;
+  --bs-btn-active-border-color:#3a0e1b;
+  --bs-btn-focus-shadow-rgb:   101, 28, 49;
+}
+.btn-outline-primary {
+  --bs-btn-color:              #651C31;
+  --bs-btn-border-color:       #651C31;
+  --bs-btn-hover-bg:           #651C31;
+  --bs-btn-hover-border-color: #651C31;
+  --bs-btn-hover-color:        #fff;
+  --bs-btn-active-bg:          #4a1324;
+  --bs-btn-active-border-color:#4a1324;
+  --bs-btn-focus-shadow-rgb:   101, 28, 49;
+}
+
+/* ── Button – success (Gold) ────────────────────────────── */
+.btn-success {
+  --bs-btn-bg:                 #E2BC54;
+  --bs-btn-border-color:       #E2BC54;
+  --bs-btn-color:              #3a2a05;
+  --bs-btn-hover-color:        #2a1e04;
+  --bs-btn-hover-bg:           #c9a640;
+  --bs-btn-hover-border-color: #c9a640;
+  --bs-btn-active-bg:          #b08e30;
+  --bs-btn-active-border-color:#b08e30;
+  --bs-btn-focus-shadow-rgb:   226, 188, 84;
+}
+.btn-outline-success {
+  --bs-btn-color:              #7a5c10;
+  --bs-btn-border-color:       #E2BC54;
+  --bs-btn-hover-bg:           #E2BC54;
+  --bs-btn-hover-border-color: #E2BC54;
+  --bs-btn-hover-color:        #3a2a05;
+  --bs-btn-focus-shadow-rgb:   226, 188, 84;
+}
+
+/* ── Base ───────────────────────────────────────────────── */
+body {
+  background: var(--surface);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 0.925rem;
+  color: var(--charcoal);
+}
+
+/* ── Navbar ─────────────────────────────────────────────── */
+.bg-primary-custom {
+  background: linear-gradient(135deg, var(--burgundy-dark) 0%, var(--burgundy) 100%) !important;
+  box-shadow: 0 2px 8px rgba(74, 19, 36, .4);
+}
+.navbar-brand { font-size: 1.1rem; letter-spacing: .01em; }
+.navbar-dark .navbar-nav .nav-link { color: rgba(255,255,255,.8); }
+.navbar-dark .navbar-nav .nav-link:hover,
+.navbar-dark .navbar-nav .nav-link.active { color: #fff; }
+
+/* ── Login page ─────────────────────────────────────────── */
+.login-body {
+  background: linear-gradient(135deg, var(--burgundy-dark) 0%, var(--burgundy) 55%, var(--mauve) 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login-wrapper { width: 100%; max-width: 420px; padding: 1rem; }
+.login-card { border: none; border-radius: 1rem; overflow: hidden; }
+.login-header {
+  background: linear-gradient(135deg, var(--burgundy-dark), var(--burgundy));
+  padding: 2rem 2rem 1.5rem;
+}
+
+/* ── Cards ──────────────────────────────────────────────── */
+.card { border-radius: var(--radius); }
+.card-header {
+  border-bottom: 1px solid var(--border);
+  font-size: .9rem;
+  border-radius: var(--radius) var(--radius) 0 0 !important;
+}
+
+/* ── Stats cards ────────────────────────────────────────── */
+.stat-card { border-radius: var(--radius); transition: transform .15s; }
+.stat-card:hover { transform: translateY(-2px); }
+.stat-number { font-size: 2rem; font-weight: 700; line-height: 1; }
+.stat-label  { font-size: .75rem; color: #888; text-transform: uppercase; letter-spacing: .05em; margin-top: .25rem; }
+
+/* ── Table ──────────────────────────────────────────────── */
+.table-header th {
+  background: var(--burgundy-light);
+  color: var(--burgundy-dark);
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-weight: 600;
+  border-color: #d9a9b8;
+}
+.doc-row { cursor: pointer; transition: background .1s; }
+.doc-row:hover { background: var(--burgundy-light) !important; }
+
+/* ── Document type badges ───────────────────────────────── */
+.badge-office    { background: var(--burgundy-light); color: var(--burgundy-dark); border: 1px solid #d9a9b8; }
+.badge-telefon   { background: var(--gold-light);     color: #7a5c10;              border: 1px solid #f0da8a; }
+.badge-produkcja { background: var(--slate-light);    color: #3a4566;              border: 1px solid #b0b9d0; }
+
+/* ── Type selector cards (new document form) ────────────── */
+.type-card {
+  border-radius: var(--radius) !important;
+  transition: all .2s;
+  min-height: 130px;
+}
+.btn-check:checked + .type-card {
+  box-shadow: 0 0 0 3px currentColor, 0 4px 16px rgba(0,0,0,.12);
+  transform: translateY(-2px);
+}
+.type-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+
+/* ── Signature pad ──────────────────────────────────────── */
+.sig-pad-wrapper {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  overflow: hidden;
+  cursor: crosshair;
+  touch-action: none;
+}
+.sig-pad-wrapper:hover { border-color: var(--burgundy); }
+.sig-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.sig-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #adb5bd;
+  font-size: .85rem;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── Signature preview (document view page) ─────────────── */
+.sig-preview {
+  background: #fff;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sig-preview img { max-height: 100px; width: 100%; object-fit: contain; }
+.sig-placeholder {
+  min-height: 80px;
+  background: #faf7f8;
+  color: #adb5bd;
+}
+
+/* ── Equipment table (document form) ────────────────────── */
+#equipmentTable th { font-size: .8rem; background: var(--burgundy-light); color: var(--burgundy-dark); }
+#equipmentTable td { vertical-align: middle; padding: .35rem .5rem; }
+#equipmentTable .form-control,
+#equipmentTable .form-select { font-size: .85rem; }
+
+/* ── Alerts ─────────────────────────────────────────────── */
+.alert { border-radius: var(--radius); font-size: .9rem; }
+
+/* ── Tablet optimisations ───────────────────────────────── */
+@media (max-width: 767.98px) {
+  .sig-pad-wrapper { height: 160px; }
+  .stat-number     { font-size: 1.5rem; }
+  .table-responsive { font-size: .82rem; }
+  .btn-group .btn  { font-size: .78rem; padding: .25rem .5rem; }
+}
+
+@media (max-width: 575.98px) {
+  .container-fluid { padding-left: .75rem; padding-right: .75rem; }
+}

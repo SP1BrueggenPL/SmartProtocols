@@ -1,0 +1,154 @@
+/* ── Variables ─────────────────────────────────────────── */
+:root {
+  --primary:       #1a4d8f;
+  --primary-light: #dce8f7;
+  --primary-dark:  #12356a;
+  --success:       #198754;
+  --surface:       #f8f9fb;
+  --border:        #dee2e6;
+  --radius:        0.5rem;
+}
+
+/* ── Base ───────────────────────────────────────────────── */
+body {
+  background: var(--surface);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 0.925rem;
+}
+
+/* ── Navbar ─────────────────────────────────────────────── */
+.bg-primary-custom {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%) !important;
+  box-shadow: 0 2px 8px rgba(26,77,143,.3);
+}
+.navbar-brand { font-size: 1.1rem; letter-spacing: .01em; }
+.navbar-dark .navbar-nav .nav-link { color: rgba(255,255,255,.8); }
+.navbar-dark .navbar-nav .nav-link:hover,
+.navbar-dark .navbar-nav .nav-link.active { color: #fff; }
+
+/* ── Login page ─────────────────────────────────────────── */
+.login-body {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 60%, #2d7dd2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login-wrapper { width: 100%; max-width: 420px; padding: 1rem; }
+.login-card { border: none; border-radius: 1rem; overflow: hidden; }
+.login-header {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  padding: 2rem 2rem 1.5rem;
+}
+
+/* ── Cards ──────────────────────────────────────────────── */
+.card { border-radius: var(--radius); }
+.card-header {
+  border-bottom: 1px solid var(--border);
+  font-size: .9rem;
+  border-radius: var(--radius) var(--radius) 0 0 !important;
+}
+
+/* ── Stats cards ────────────────────────────────────────── */
+.stat-card { border-radius: var(--radius); transition: transform .15s; }
+.stat-card:hover { transform: translateY(-2px); }
+.stat-number { font-size: 2rem; font-weight: 700; line-height: 1; }
+.stat-label  { font-size: .75rem; color: #6c757d; text-transform: uppercase; letter-spacing: .05em; margin-top: .25rem; }
+
+/* ── Table ──────────────────────────────────────────────── */
+.table-header th {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-weight: 600;
+  border-color: #c5d8f0;
+}
+.doc-row { cursor: pointer; transition: background .1s; }
+.doc-row:hover { background: var(--primary-light) !important; }
+
+/* ── Badges ─────────────────────────────────────────────── */
+.badge-office    { background: #cfe2ff; color: #084298; border: 1px solid #b6d4fe; }
+.badge-telefon   { background: #d1e7dd; color: #0a3622; border: 1px solid #a3cfbb; }
+.badge-produkcja { background: #fff3cd; color: #664d03; border: 1px solid #ffe69c; }
+
+/* ── Type cards (form) ──────────────────────────────────── */
+.type-card {
+  border-radius: var(--radius) !important;
+  transition: all .2s;
+  min-height: 130px;
+}
+.btn-check:checked + .type-card {
+  box-shadow: 0 0 0 3px currentColor, 0 4px 16px rgba(0,0,0,.12);
+  transform: translateY(-2px);
+}
+.type-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+
+/* ── Signature pad ──────────────────────────────────────── */
+.sig-pad-wrapper {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  overflow: hidden;
+  cursor: crosshair;
+  touch-action: none;
+}
+.sig-pad-wrapper:hover { border-color: var(--primary); }
+.sig-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.sig-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #adb5bd;
+  font-size: .85rem;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── Signature preview (view page) ─────────────────────── */
+.sig-preview {
+  background: #fff;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sig-preview img { max-height: 100px; width: 100%; object-fit: contain; }
+.sig-placeholder {
+  min-height: 80px;
+  background: #f8f9fa;
+  color: #adb5bd;
+}
+
+/* ── Equipment table (form) ─────────────────────────────── */
+#equipmentTable th { font-size: .8rem; background: var(--primary-light); color: var(--primary); }
+#equipmentTable td { vertical-align: middle; padding: .35rem .5rem; }
+#equipmentTable .form-control,
+#equipmentTable .form-select { font-size: .85rem; }
+
+/* ── Alerts ─────────────────────────────────────────────── */
+.alert { border-radius: var(--radius); font-size: .9rem; }
+
+/* ── Tablet optimisations ───────────────────────────────── */
+@media (max-width: 767.98px) {
+  .sig-pad-wrapper { height: 160px; }
+  .stat-number     { font-size: 1.5rem; }
+  .table-responsive { font-size: .82rem; }
+  .btn-group .btn  { font-size: .78rem; padding: .25rem .5rem; }
+}
+
+@media (max-width: 575.98px) {
+  .container-fluid { padding-left: .75rem; padding-right: .75rem; }
+}

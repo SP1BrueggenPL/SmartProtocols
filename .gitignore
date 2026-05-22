@@ -1,0 +1,39 @@
+# Baza danych i klucz tajny – nigdy nie commitujemy
+data/
+*.sqlite3
+.secret_key
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Środowisko wirtualne
+venv/
+env/
+.env
+*.env
+
+# Logi
+*.log
+
+# Pliki tymczasowe robocze (rozpakowane docx)
+unpacked_*/
+
+# Systemy operacyjne
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Dystrybucja / build
+dist/
+build/
+*.egg-info/

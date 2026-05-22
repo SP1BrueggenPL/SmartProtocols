@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'edit' %}Edytuj protokół{% else %}Nowy protokół{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left"></i>
+  </a>
+  <h4 class="mb-0 fw-bold">
+    <i class="bi bi-file-earmark-plus me-2 text-primary"></i>
+    {% if mode == 'edit' %}Edytuj protokół {{ document.doc_number }}{% else %}Nowy protokół wydania / zwrotu{% endif %}
+  </h4>
+</div>
+
+<form method="post"
+      action="{% if mode == 'edit' %}{{ url_for('document_edit', doc_id=document.id) }}{% else %}{{ url_for('document_create') }}{% endif %}"
+      id="docForm">
+
+  {# ── Step 1: Type selector (only on new) ── #}
+  {% if mode != 'edit' %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white fw-semibold py-3">
+      <i class="bi bi-1-circle-fill text-primary me-2"></i>Wybierz typ protokołu
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <input type="radio" class="btn-check" name="doc_type" id="type_office"
+                 value="office" {% if not document or document.doc_type == 'office' %}checked{% endif %}>
+          <label class="btn btn-outline-primary type-card w-100 h-100 p-4 text-start" for="type_office">
+            <i class="bi bi-laptop display-6 d-block mb-2"></i>
+            <strong>Sprzęt Office</strong>
+            <small class="d-block text-muted mt-1">Laptop, monitor, klawiatura, mysz, stacja dokująca...</small>
+          </label>
+        </div>
+        <div class="col-md-4">
+          <input type="radio" class="btn-check" name="doc_type" id="type_telefon"
+                 value="telefon" {% if document and document.doc_type == 'telefon' %}checked{% endif %}>
+          <label class="btn btn-outline-success type-card w-100 h-100 p-4 text-start" for="type_telefon">
+            <i class="bi bi-phone display-6 d-block mb-2"></i>
+            <strong>Telefon</strong>
+            <small class="d-block text-muted mt-1">Smartphone, karta SIM, akcesoria...</small>
+          </label>
+        </div>
+        <div class="col-md-4">
+          <input type="radio" class="btn-check" name="doc_type" id="type_produkcja"
+                 value="produkcja" {% if document and document.doc_type == 'produkcja' %}checked{% endif %}>
+          <label class="btn btn-outline-warning type-card w-100 h-100 p-4 text-start" for="type_produkcja">
+            <i class="bi bi-cpu display-6 d-block mb-2"></i>
+            <strong>Sprzęt Produkcja</strong>
+            <small class="d-block text-muted mt-1">Komputer ADS-Tec, drukarka Zebra, skaner...</small>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <input type="hidden" name="doc_type" value="{{ document.doc_type }}">
+  {% endif %}
+
+  {# ── Step 2: Header data ── #}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white fw-semibold py-3">
+      <i class="bi bi-2-circle-fill text-primary me-2"></i>Dane podstawowe
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Typ operacji <span class="text-danger">*</span></label>
+          <div class="d-flex gap-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="operation" id="op_wydanie"
+                     value="wydanie" {% if not document or document.operation == 'wydanie' %}checked{% endif %}>
+              <label class="form-check-label" for="op_wydanie">
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                  <i class="bi bi-box-arrow-up-right me-1"></i>Wydanie
+                </span>
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="operation" id="op_zwrot"
+                     value="zwrot" {% if document and document.operation == 'zwrot' %}checked{% endif %}>
+              <label class="form-check-label" for="op_zwrot">
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">
+                  <i class="bi bi-box-arrow-in-down-left me-1"></i>Zwrot
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label for="doc_date" class="form-label fw-semibold">Data <span class="text-danger">*</span></label>
+          <input type="date" name="doc_date" id="doc_date" class="form-control" required
+                 value="{{ document.doc_date if document else '' }}" id="doc_date">
+        </div>
+        <div class="col-md-4 field-network-name" {% if not document or document.doc_type != 'office' %}style="display:none"{% endif %}>
+          <label for="network_name" class="form-label fw-semibold">Nazwa sieciowa</label>
+          <input type="text" name="network_name" id="network_name" class="form-control"
+                 placeholder="np. PL-LAPTOP-001"
+                 value="{{ document.network_name if document and document.network_name else '' }}">
+        </div>
+      </div>
+
+      <div class="row g-3 mt-1">
+        <div class="col-md-6">
+          <label for="issuer_name" class="form-label fw-semibold">Przekazujący <span class="text-danger">*</span></label>
+          <input type="text" name="issuer_name" id="issuer_name" class="form-control" required
+                 placeholder="Imię i nazwisko"
+                 value="{{ document.issuer_name if document else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label for="receiver_name" class="form-label fw-semibold">Przyjmujący <span class="text-danger">*</span></label>
+          <input type="text" name="receiver_name" id="receiver_name" class="form-control" required
+                 placeholder="Imię i nazwisko"
+                 value="{{ document.receiver_name if document else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label for="receiver_email" class="form-label fw-semibold">
+            Email przyjmującego <span class="text-danger">*</span>
+          </label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+            <input type="email" name="receiver_email" id="receiver_email" class="form-control" required
+                   placeholder="jan.kowalski@brueggen.pl"
+                   value="{{ document.receiver_email if document else '' }}">
+          </div>
+          <div class="form-text">Na ten adres zostanie wysłany podpisany protokół.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Step 3a: Equipment table (office / produkcja) ── #}
+  <div class="card border-0 shadow-sm mb-4 section-equipment"
+       {% if document and document.doc_type == 'telefon' %}style="display:none"{% endif %}>
+    <div class="card-header bg-white fw-semibold py-3 d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-3-circle-fill text-primary me-2"></i>Wykaz sprzętu</span>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="addRowBtn">
+        <i class="bi bi-plus-circle me-1"></i>Dodaj pozycję
+      </button>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-bordered mb-0" id="equipmentTable">
+          <thead class="table-light">
+            <tr>
+              <th style="width:22%">Sprzęt <span class="text-danger">*</span></th>
+              <th style="width:28%">Producent / Model</th>
+              <th style="width:22%">Nr seryjny</th>
+              <th style="width:8%">Ilość</th>
+              <th style="width:16%">Nr wewnętrzny</th>
+              <th style="width:4%"></th>
+            </tr>
+          </thead>
+          <tbody id="equipmentRows">
+            {% if document and items and document.doc_type != 'telefon' %}
+              {% for item in items %}
+              <tr class="equipment-row">
+                <td>
+                  <select name="equipment_type[]" class="form-select form-select-sm eq-type-select" required>
+                    <option value="">– wybierz –</option>
+                    <optgroup label="Office" class="opts-office">
+                      {% for opt in ['Laptop','Stacja dokująca','SFF PC','Monitor','Torba','Słuchawki','Mysz','Klawiatura','Zasilacz','Pozostałe (Office)'] %}
+                      <option value="{{ opt }}" {% if item.equipment_type == opt %}selected{% endif %}>{{ opt }}</option>
+                      {% endfor %}
+                    </optgroup>
+                    <optgroup label="Produkcja" class="opts-produkcja">
+                      {% for opt in ['Komputer ADS-Tec','Drukarka Zebra','Drukarka','Programator','Skaner ręczny','Czytniki','Pozostałe (Produkcja)'] %}
+                      <option value="{{ opt }}" {% if item.equipment_type == opt %}selected{% endif %}>{{ opt }}</option>
+                      {% endfor %}
+                    </optgroup>
+                  </select>
+                </td>
+                <td><input type="text" name="manufacturer_model[]" class="form-control form-control-sm"
+                            value="{{ item.manufacturer_model or '' }}" placeholder="np. Dell Latitude 5540"></td>
+                <td><input type="text" name="serial_number[]" class="form-control form-control-sm"
+                            value="{{ item.serial_number or '' }}" placeholder="SN"></td>
+                <td><input type="number" name="quantity[]" class="form-control form-control-sm text-center"
+                            value="{{ item.quantity or 1 }}" min="1" max="999"></td>
+                <td><input type="text" name="internal_number[]" class="form-control form-control-sm"
+                            value="{{ item.internal_number or '' }}" placeholder="Nr IT"></td>
+                <td class="text-center">
+                  <button type="button" class="btn btn-sm btn-outline-danger remove-row" title="Usuń">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr class="equipment-row">
+                <td>
+                  <select name="equipment_type[]" class="form-select form-select-sm eq-type-select" required>
+                    <option value="">– wybierz –</option>
+                    <optgroup label="Office" class="opts-office">
+                      {% for opt in ['Laptop','Stacja dokująca','SFF PC','Monitor','Torba','Słuchawki','Mysz','Klawiatura','Zasilacz','Pozostałe (Office)'] %}
+                      <option value="{{ opt }}">{{ opt }}</option>
+                      {% endfor %}
+                    </optgroup>
+                    <optgroup label="Produkcja" class="opts-produkcja">
+                      {% for opt in ['Komputer ADS-Tec','Drukarka Zebra','Drukarka','Programator','Skaner ręczny','Czytniki','Pozostałe (Produkcja)'] %}
+                      <option value="{{ opt }}">{{ opt }}</option>
+                      {% endfor %}
+                    </optgroup>
+                  </select>
+                </td>
+                <td><input type="text" name="manufacturer_model[]" class="form-control form-control-sm" placeholder="np. Dell Latitude 5540"></td>
+                <td><input type="text" name="serial_number[]" class="form-control form-control-sm" placeholder="SN"></td>
+                <td><input type="number" name="quantity[]" class="form-control form-control-sm text-center" value="1" min="1" max="999"></td>
+                <td><input type="text" name="internal_number[]" class="form-control form-control-sm" placeholder="Nr IT"></td>
+                <td class="text-center">
+                  <button type="button" class="btn btn-sm btn-outline-danger remove-row" title="Usuń">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {# ── Step 3b: Phone form ── #}
+  <div class="card border-0 shadow-sm mb-4 section-phone"
+       {% if not document or document.doc_type != 'telefon' %}style="display:none"{% endif %}>
+    <div class="card-header bg-white fw-semibold py-3">
+      <i class="bi bi-3-circle-fill text-primary me-2"></i>Dane telefonu
+    </div>
+    <div class="card-body">
+      {% set phone_item = items[0] if items else none %}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Rodzaj telefonu</label>
+          <input type="text" name="phone_type" class="form-control"
+                 placeholder="np. Samsung Galaxy S24"
+                 value="{{ phone_item.phone_type if phone_item else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Nr IMEI</label>
+          <input type="text" name="imei" class="form-control"
+                 placeholder="15-cyfrowy numer IMEI"
+                 value="{{ phone_item.imei if phone_item else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Nr seryjny</label>
+          <input type="text" name="serial_number" class="form-control"
+                 placeholder="Serial Number"
+                 value="{{ phone_item.serial_number if phone_item else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Nazwa wewnętrzna</label>
+          <input type="text" name="internal_name" class="form-control"
+                 placeholder="np. PL-PHONE-001"
+                 value="{{ phone_item.internal_name if phone_item else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Nr telefonu</label>
+          <input type="text" name="phone_number" class="form-control"
+                 placeholder="+48 000 000 000"
+                 value="{{ phone_item.phone_number if phone_item else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Nr karty SIM</label>
+          <input type="text" name="sim_number" class="form-control"
+                 placeholder="Nr SIM"
+                 value="{{ phone_item.sim_number if phone_item else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Nr PIN telefonu</label>
+          <input type="text" name="pin_phone" class="form-control"
+                 placeholder="PIN"
+                 value="{{ phone_item.pin_phone if phone_item else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Nr PIN karty SIM</label>
+          <input type="text" name="pin_sim" class="form-control"
+                 placeholder="PIN SIM"
+                 value="{{ phone_item.pin_sim if phone_item else '' }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Akcesoria</label>
+          <div class="d-flex flex-wrap gap-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="acc_foil" id="acc_foil"
+                     {% if phone_item and phone_item.acc_foil %}checked{% endif %}>
+              <label class="form-check-label" for="acc_foil">
+                <i class="bi bi-phone-flip me-1"></i>Folia / Szybka
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="acc_case" id="acc_case"
+                     {% if phone_item and phone_item.acc_case %}checked{% endif %}>
+              <label class="form-check-label" for="acc_case">
+                <i class="bi bi-shield me-1"></i>Etui
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="acc_charger" id="acc_charger"
+                     {% if phone_item and phone_item.acc_charger %}checked{% endif %}>
+              <label class="form-check-label" for="acc_charger">
+                <i class="bi bi-plug me-1"></i>Ładowarka
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="acc_headphones" id="acc_headphones"
+                     {% if phone_item and phone_item.acc_headphones %}checked{% endif %}>
+              <label class="form-check-label" for="acc_headphones">
+                <i class="bi bi-headphones me-1"></i>Słuchawki
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Pozostałe / Uwagi</label>
+          <textarea name="notes" class="form-control" rows="2"
+                    placeholder="Dodatkowe uwagi...">{{ phone_item.notes if phone_item else '' }}</textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Submit #}
+  <div class="d-flex gap-2 justify-content-end">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-x-circle me-1"></i>Anuluj
+    </a>
+    <button type="submit" class="btn btn-primary px-4">
+      <i class="bi bi-check-circle me-2"></i>
+      {% if mode == 'edit' %}Zapisz zmiany{% else %}Utwórz protokół{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script>
+  initDocumentForm(
+    {% if document %}'{{ document.doc_type }}'{% else %}'office'{% endif %}
+  );
+</script>
+{% endblock %}

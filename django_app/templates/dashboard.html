@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Dokumenty{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <h4 class="mb-0 fw-bold"><i class="bi bi-list-ul me-2 text-primary"></i>Protokoły wydania / zwrotu</h4>
+  <a href="{% url 'document_new' %}" class="btn btn-primary">
+    <i class="bi bi-plus-circle me-2"></i>Nowy protokół
+  </a>
+</div>
+
+{# Search #}
+<form method="get" action="{% url 'dashboard' %}" class="mb-3">
+  {% if filter_type %}<input type="hidden" name="type" value="{{ filter_type }}">{% endif %}
+  {% if filter_status %}<input type="hidden" name="status" value="{{ filter_status }}">{% endif %}
+  <div class="input-group shadow-sm">
+    <span class="input-group-text bg-white border-end-0 text-muted">
+      <i class="bi bi-search"></i>
+    </span>
+    <input type="text" name="q" value="{{ search_query }}"
+           class="form-control border-start-0 ps-0"
+           placeholder="Szukaj po numerze dokumentu, nazwisku, emailu…"
+           autocomplete="off">
+    {% if search_query %}
+    <a href="{% url 'dashboard' %}{% if filter_type %}?type={{ filter_type }}{% endif %}{% if filter_status %}{% if filter_type %}&{% else %}?{% endif %}status={{ filter_status }}{% endif %}"
+       class="btn btn-outline-secondary" title="Wyczyść">
+      <i class="bi bi-x-lg"></i>
+    </a>
+    {% endif %}
+    <button type="submit" class="btn btn-primary">Szukaj</button>
+  </div>
+</form>
+
+{# Filters #}
+<div class="card mb-4 border-0 shadow-sm">
+  <div class="card-body py-2 px-3">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <span class="text-muted small fw-semibold me-1"><i class="bi bi-funnel me-1"></i>Filtruj:</span>
+      <div class="btn-group btn-group-sm">
+        <a href="{% url 'dashboard' %}?{% if filter_status %}status={{ filter_status }}&{% endif %}{% if search_query %}q={{ search_query }}{% endif %}"
+           class="btn {% if not filter_type %}btn-primary{% else %}btn-outline-primary{% endif %}">Wszystkie typy</a>
+        <a href="{% url 'dashboard' %}?type=office{% if filter_status %}&status={{ filter_status }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+           class="btn {% if filter_type == 'office' %}btn-primary{% else %}btn-outline-primary{% endif %}">Office</a>
+        <a href="{% url 'dashboard' %}?type=telefon{% if filter_status %}&status={{ filter_status }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+           class="btn {% if filter_type == 'telefon' %}btn-primary{% else %}btn-outline-primary{% endif %}">Telefon</a>
+        <a href="{% url 'dashboard' %}?type=produkcja{% if filter_status %}&status={{ filter_status }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+           class="btn {% if filter_type == 'produkcja' %}btn-primary{% else %}btn-outline-primary{% endif %}">Produkcja</a>
+      </div>
+      <div class="btn-group btn-group-sm">
+        <a href="{% url 'dashboard' %}?{% if filter_type %}type={{ filter_type }}&{% endif %}{% if search_query %}q={{ search_query }}{% endif %}"
+           class="btn {% if not filter_status %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Wszystkie</a>
+        <a href="{% url 'dashboard' %}?status=draft{% if filter_type %}&type={{ filter_type }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+           class="btn {% if filter_status == 'draft' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Robocze</a>
+        <a href="{% url 'dashboard' %}?status=signed{% if filter_type %}&type={{ filter_type }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+           class="btn {% if filter_status == 'signed' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Podpisane</a>
+        <a href="{% url 'dashboard' %}?status=sent{% if filter_type %}&type={{ filter_type }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+           class="btn {% if filter_status == 'sent' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Wysłane</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Stats #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card bg-white border rounded-3 p-3 text-center shadow-sm">
+      <div class="stat-number text-primary">{{ stats.total }}</div>
+      <div class="stat-label">Łącznie</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card bg-white border rounded-3 p-3 text-center shadow-sm">
+      <div class="stat-number text-warning">{{ stats.draft }}</div>
+      <div class="stat-label">Robocze</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card bg-white border rounded-3 p-3 text-center shadow-sm">
+      <div class="stat-number text-success">{{ stats.signed }}</div>
+      <div class="stat-label">Podpisane</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card bg-white border rounded-3 p-3 text-center shadow-sm">
+      <div class="stat-number text-info">{{ stats.sent }}</div>
+      <div class="stat-label">Wysłane</div>
+    </div>
+  </div>
+</div>
+
+{# Table #}
+{% if documents %}
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-header">
+        <tr>
+          <th>Nr dokumentu</th><th>Typ</th><th>Operacja</th>
+          <th>Przyjmujący</th><th>Data</th><th>Status</th>
+          <th class="text-end">Akcje</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for doc in documents %}
+        <tr class="doc-row" onclick="window.location='{% url 'document_view' doc.pk %}'">
+          <td><span class="fw-semibold text-primary">{{ doc.doc_number }}</span></td>
+          <td>
+            {% if doc.doc_type == 'office' %}<span class="badge badge-office">Office</span>
+            {% elif doc.doc_type == 'telefon' %}<span class="badge badge-telefon">Telefon</span>
+            {% else %}<span class="badge badge-produkcja">Produkcja</span>{% endif %}
+          </td>
+          <td>
+            {% if doc.operation == 'wydanie' %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Wydanie</span>
+            {% else %}
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                <i class="bi bi-box-arrow-in-down-left me-1"></i>Zwrot</span>
+            {% endif %}
+          </td>
+          <td>{{ doc.receiver_name }}</td>
+          <td><span class="text-muted">{{ doc.doc_date }}</span></td>
+          <td>
+            {% if doc.is_sent %}
+              <span class="badge bg-info-subtle text-info border border-info-subtle">
+                <i class="bi bi-envelope-check me-1"></i>Wysłany</span>
+            {% elif doc.is_signed %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle">
+                <i class="bi bi-pen me-1"></i>Podpisany</span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                <i class="bi bi-pencil me-1"></i>Roboczy</span>
+            {% endif %}
+          </td>
+          <td class="text-end" onclick="event.stopPropagation()">
+            <div class="d-flex gap-1 justify-content-end">
+              <a href="{% url 'document_view' doc.pk %}" class="btn btn-sm btn-outline-primary" title="Podgląd">
+                <i class="bi bi-eye"></i></a>
+              {% if not doc.is_signed %}
+              <a href="{% url 'document_edit' doc.pk %}" class="btn btn-sm btn-outline-secondary" title="Edytuj">
+                <i class="bi bi-pencil"></i></a>
+              <a href="{% url 'document_sign' doc.pk %}" class="btn btn-sm btn-outline-success" title="Podpisz">
+                <i class="bi bi-pen"></i></a>
+              {% endif %}
+              <a href="{% url 'document_pdf' doc.pk %}" class="btn btn-sm btn-outline-danger" title="PDF">
+                <i class="bi bi-file-earmark-pdf"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-inbox display-3 d-block mb-3 opacity-25"></i>
+  <h5>Brak protokołów</h5>
+  <p class="mb-4">Nie znaleziono dokumentów spełniających wybrane kryteria.</p>
+  <a href="{% url 'document_new' %}" class="btn btn-primary">
+    <i class="bi bi-plus-circle me-2"></i>Utwórz pierwszy protokół</a>
+</div>
+{% endif %}
+{% endblock %}

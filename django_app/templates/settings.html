@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+{% block title %}Ustawienia{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <h4 class="mb-0 fw-bold"><i class="bi bi-gear me-2 text-primary"></i>Ustawienia systemu</h4>
+</div>
+
+{# Email #}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white fw-semibold py-3">
+    <i class="bi bi-envelope me-2 text-primary"></i>Ustawienia email
+  </div>
+  <div class="card-body">
+    <div class="row g-4 align-items-start">
+
+      {# Adres księgowości #}
+      <div class="col-md-5">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="email_settings">
+          <label class="form-label fw-semibold">
+            Adres księgowości
+            {% if env_overrides.accounting_email %}
+            <span class="badge bg-info-subtle text-info border border-info-subtle fw-normal ms-1">
+              <i class="bi bi-cpu me-1"></i>ACCOUNTING_EMAIL
+            </span>
+            {% endif %}
+          </label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-building"></i></span>
+            {% if env_overrides.accounting_email %}
+            <input type="email" class="form-control bg-light" readonly
+                   value="{{ settings.accounting_email }}">
+            {% else %}
+            <input type="email" name="accounting_email" class="form-control"
+                   placeholder="ksiegowosc@brueggen.pl"
+                   value="{{ settings.accounting_email }}">
+            {% endif %}
+          </div>
+          <div class="form-text">Protokoły będą wysyłane CC na ten adres.</div>
+          {% if not env_overrides.accounting_email %}
+          <button type="submit" class="btn btn-primary btn-sm mt-2">
+            <i class="bi bi-save me-1"></i>Zapisz
+          </button>
+          {% endif %}
+        </form>
+      </div>
+
+      <div class="vr d-none d-md-block mx-2" style="opacity:.15"></div>
+
+      {# Test email #}
+      <div class="col-md-5">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="test_email">
+          <label class="form-label fw-semibold">Wyślij email testowy</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-send"></i></span>
+            <input type="email" name="test_email" class="form-control"
+                   placeholder="twoj@adres.pl">
+            <button type="submit" class="btn btn-outline-secondary">
+              Wyślij test
+            </button>
+          </div>
+          <div class="form-text">Sprawdza czy konfiguracja Azure działa poprawnie.</div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{# Users #}
+<div class="card border-0 shadow-sm flex-grow-1" style="min-height:0">
+  <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+    <span class="fw-semibold"><i class="bi bi-people me-2 text-primary"></i>Użytkownicy</span>
+    <button class="btn btn-sm btn-primary" onclick="toggleAddUser()">
+      <i class="bi bi-person-plus me-1"></i>Dodaj użytkownika
+    </button>
+  </div>
+
+  {# Add user form – collapsed by default #}
+  <div id="addUserForm" style="display:none" class="border-bottom px-4 py-3 bg-light">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_user">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label form-label-sm fw-semibold mb-1">Imię i nazwisko</label>
+          <input type="text" name="new_full_name" class="form-control form-control-sm"
+                 placeholder="Jan Kowalski" required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label form-label-sm fw-semibold mb-1">Login</label>
+          <input type="text" name="new_username" class="form-control form-control-sm"
+                 placeholder="jkowalski" required autocomplete="off">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label form-label-sm fw-semibold mb-1">Hasło</label>
+          <input type="password" name="new_password" class="form-control form-control-sm"
+                 placeholder="••••••••" required autocomplete="new-password">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label form-label-sm fw-semibold mb-1">Grupa</label>
+          <select name="new_group" class="form-select form-select-sm">
+            {% for g in groups %}
+            <option value="{{ g.name }}" {% if g.name == 'Użytkownicy' %}selected{% endif %}>
+              {% if g.name == 'Administratorzy' %}🛡 {% else %}👤 {% endif %}{{ g.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+          <button type="submit" class="btn btn-sm btn-primary">
+            <i class="bi bi-check me-1"></i>Dodaj
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAddUser()">
+            Anuluj
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th style="width:22%">Imię i nazwisko</th>
+          <th style="width:13%">Login</th>
+          <th style="width:18%">Grupa</th>
+          <th style="width:12%">Status</th>
+          <th style="width:18%">Ost. logowanie</th>
+          <th class="text-end" style="width:17%"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <strong>{{ u.get_full_name|default:u.username }}</strong>
+            {% if u.pk == request.user.pk %}
+              <span class="badge bg-primary ms-1">Ty</span>
+            {% endif %}
+            {% if u.must_change_pw %}
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle ms-1"
+                    title="Użytkownik musi zmienić hasło przy następnym logowaniu">
+                <i class="bi bi-key me-1"></i>Reset
+              </span>
+            {% endif %}
+          </td>
+          <td class="text-muted font-monospace small">{{ u.username }}</td>
+          <td>
+            {% if u.current_group == 'Administratorzy' %}
+              <span class="badge badge-office">
+                <i class="bi bi-shield-lock me-1"></i>Administratorzy
+              </span>
+            {% elif u.current_group %}
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                <i class="bi bi-person me-1"></i>{{ u.current_group }}
+              </span>
+            {% else %}
+              <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.is_active %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle">Aktywny</span>
+            {% else %}
+              <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Nieaktywny</span>
+            {% endif %}
+          </td>
+          <td class="text-muted small">
+            {% if u.last_login %}
+              {{ u.last_login|date:"d.m.Y H:i" }}
+            {% else %}
+              <span class="text-muted">Nigdy</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <div class="dropdown">
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-three-dots"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" style="min-width:210px">
+
+                {# Reset hasła #}
+                <li>
+                  <a class="dropdown-item{% if u.pk == request.user.pk %} disabled{% endif %}" href="#"
+                     onclick="showResetPassword({{ u.pk }}, '{{ u.get_full_name|default:u.username }}')">
+                    <i class="bi bi-key me-2"></i>Reset hasła
+                  </a>
+                </li>
+
+                {% if u.pk != request.user.pk %}
+                {# Zmień grupę #}
+                <li><hr class="dropdown-divider my-1"></li>
+                <li><span class="dropdown-header small py-1">
+                  <i class="bi bi-people me-1"></i>Zmień grupę
+                </span></li>
+                {% for g in groups %}
+                <li>
+                  <form method="post" class="m-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="action"     value="assign_group">
+                    <input type="hidden" name="user_id"    value="{{ u.pk }}">
+                    <input type="hidden" name="group_name" value="{{ g.name }}">
+                    <button type="submit" class="dropdown-item d-flex align-items-center justify-content-between">
+                      <span>
+                        <i class="bi bi-{% if g.name == 'Administratorzy' %}shield-lock{% else %}person{% endif %} me-2"></i>{{ g.name }}
+                      </span>
+                      {% if u.current_group == g.name %}
+                      <i class="bi bi-check2 text-success ms-2"></i>
+                      {% endif %}
+                    </button>
+                  </form>
+                </li>
+                {% endfor %}
+
+                {# Aktywuj / Dezaktywuj #}
+                <li><hr class="dropdown-divider my-1"></li>
+                <li>
+                  <form method="post" class="m-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="action"  value="toggle_user">
+                    <input type="hidden" name="user_id" value="{{ u.pk }}">
+                    <button type="submit"
+                            class="dropdown-item text-{% if u.is_active %}warning{% else %}success{% endif %}">
+                      <i class="bi bi-person-{% if u.is_active %}slash{% else %}check{% endif %} me-2"></i>
+                      {% if u.is_active %}Dezaktywuj{% else %}Aktywuj{% endif %}
+                    </button>
+                  </form>
+                </li>
+
+                {# Usuń #}
+                <li><hr class="dropdown-divider my-1"></li>
+                <li>
+                  <a class="dropdown-item text-danger" href="#"
+                     onclick="showDeleteUser({{ u.pk }}, '{{ u.get_full_name|default:u.username }}')">
+                    <i class="bi bi-trash me-2"></i>Usuń użytkownika
+                  </a>
+                </li>
+                {% endif %}
+
+              </ul>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+</div>
+
+
+{# Modal: reset hasła #}
+<div class="modal fade" id="resetPwModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold"><i class="bi bi-key me-2"></i>Reset hasła</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action"  value="reset_password">
+        <input type="hidden" name="user_id" id="resetPwUserId">
+        <div class="modal-body">
+          <p class="mb-1 text-muted small">Resetujesz hasło dla:</p>
+          <p class="fw-bold mb-3" id="resetPwName"></p>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Tymczasowe hasło</label>
+            <div class="input-group">
+              <input type="password" name="temp_password" id="resetPwInput"
+                     class="form-control" placeholder="Min. 12 znaków"
+                     autocomplete="new-password" required
+                     oninput="checkResetPw(this.value)">
+              <button type="button" class="btn btn-outline-secondary"
+                      onclick="toggleResetPw()">
+                <i class="bi bi-eye" id="resetPwEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <div class="mb-3">
+            <div class="d-flex flex-wrap gap-2" id="resetPwReqs">
+              <small id="rreq-len"  class="rreq text-muted"><i class="bi bi-x-circle me-1"></i>12 znaków</small>
+              <small id="rreq-up"   class="rreq text-muted"><i class="bi bi-x-circle me-1"></i>Wielka litera</small>
+              <small id="rreq-low"  class="rreq text-muted"><i class="bi bi-x-circle me-1"></i>Mała litera</small>
+              <small id="rreq-num"  class="rreq text-muted"><i class="bi bi-x-circle me-1"></i>Cyfra</small>
+              <small id="rreq-spec" class="rreq text-muted"><i class="bi bi-x-circle me-1"></i>Znak specjalny</small>
+            </div>
+          </div>
+          <div class="alert alert-warning border-0 py-2 small mb-0 d-flex gap-2">
+            <i class="bi bi-info-circle flex-shrink-0 mt-1"></i>
+            <span>Użytkownik będzie musiał zmienić to hasło przy pierwszym logowaniu.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Anuluj</button>
+          <button type="submit" class="btn btn-warning btn-sm">
+            <i class="bi bi-key me-1"></i>Resetuj hasło
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# Modal: potwierdzenie usunięcia #}
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content border-danger">
+      <div class="modal-header bg-danger text-white">
+        <h6 class="modal-title fw-bold"><i class="bi bi-trash me-2"></i>Usuń użytkownika</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" id="deleteUserForm">
+        {% csrf_token %}
+        <input type="hidden" name="action"  value="delete_user">
+        <input type="hidden" name="user_id" id="deleteUserId">
+        <div class="modal-body">
+          <p class="mb-1">Czy na pewno chcesz usunąć użytkownika:</p>
+          <p class="fw-bold" id="deleteUserName"></p>
+          <p class="text-danger small mb-0">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Tej operacji nie można cofnąć. Dokumenty utworzone przez tego użytkownika zostaną zachowane.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Anuluj</button>
+          <button type="submit" class="btn btn-danger btn-sm">
+            <i class="bi bi-trash me-1"></i>Usuń
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+  /* Strona ustawień – karta użytkowników rozciąga się do dołu viewport */
+  body { min-height: 100vh; }
+  main { display: flex; flex-direction: column; }
+  main > .container-fluid {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  main > .container-fluid > .card:last-of-type {
+    flex: 1;
+  }
+</style>
+<script>
+function toggleAddUser() {
+  const el = document.getElementById('addUserForm');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+function showResetPassword(userId, fullName) {
+  document.getElementById('resetPwUserId').value = userId;
+  document.getElementById('resetPwName').textContent = fullName;
+  const input = document.getElementById('resetPwInput');
+  input.value = '';
+  input.type = 'password';
+  document.getElementById('resetPwEyeIcon').className = 'bi bi-eye';
+  checkResetPw('');  // reset checklist + zablokuj przycisk
+  new bootstrap.Modal(document.getElementById('resetPwModal')).show();
+  setTimeout(() => input.focus(), 300);
+}
+function toggleResetPw() {
+  const input = document.getElementById('resetPwInput');
+  const icon  = document.getElementById('resetPwEyeIcon');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'bi bi-eye-slash';
+  } else {
+    input.type = 'password';
+    icon.className = 'bi bi-eye';
+  }
+}
+function setRReq(id, ok) {
+  const el = document.getElementById(id);
+  el.className = 'rreq ' + (ok ? 'text-success' : 'text-muted');
+  const label = {'rreq-len':'12 znaków','rreq-up':'Wielka litera',
+                 'rreq-low':'Mała litera','rreq-num':'Cyfra','rreq-spec':'Znak specjalny'}[id];
+  el.innerHTML = '<i class="bi bi-' + (ok ? 'check-circle-fill' : 'x-circle') + ' me-1"></i>' + label;
+}
+function checkResetPw(pw) {
+  setRReq('rreq-len',  pw.length >= 12);
+  setRReq('rreq-up',   /[A-Z]/.test(pw));
+  setRReq('rreq-low',  /[a-z]/.test(pw));
+  setRReq('rreq-num',  /\d/.test(pw));
+  setRReq('rreq-spec', /[^A-Za-z0-9]/.test(pw));
+  const ok = pw.length >= 12 && /[A-Z]/.test(pw) && /[a-z]/.test(pw)
+          && /\d/.test(pw) && /[^A-Za-z0-9]/.test(pw);
+  document.querySelector('#resetPwModal button[type=submit]').disabled = !ok;
+}
+function showDeleteUser(userId, fullName) {
+  document.getElementById('deleteUserId').value = userId;
+  document.getElementById('deleteUserName').textContent = fullName;
+  new bootstrap.Modal(document.getElementById('deleteUserModal')).show();
+}
+</script>
+{% endblock %}
