@@ -1,19 +1,20 @@
 #!/bin/bash
 set -e
 
-export PYTHONPATH="/home/site/wwwroot/django_app:$PYTHONPATH"
+# Azure Oryx extracts the build archive to /tmp/<hash>/ and runs this script
+# from that directory. We use dirname to reliably find django_app/ next to us.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-cd /home/site/wwwroot/django_app
-
-# Persistent storage on Azure lives under /home
 mkdir -p /home/data
+
+cd "$SCRIPT_DIR/django_app"
 
 python manage.py migrate --noinput
 python init_data.py
 python manage.py collectstatic --noinput
 
 exec gunicorn brueggen.wsgi:application \
-  --bind 0.0.0.0:8000 \
+  --bind "0.0.0.0:${PORT:-8000}" \
   --workers 2 \
   --timeout 120 \
   --access-logfile '-' \
