@@ -4,16 +4,28 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Stable secret key stored in a local file so it survives restarts
-_KEY_FILE = BASE_DIR / 'data' / '.secret_key'
-if _KEY_FILE.exists():
-    SECRET_KEY = _KEY_FILE.read_text().strip()
-else:
-    SECRET_KEY = secrets.token_hex(32)
-    _KEY_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _KEY_FILE.write_text(SECRET_KEY)
+# ── Azure detection ───────────────────────────────────────────────────────────
+_ON_AZURE = bool(os.environ.get('WEBSITE_SITE_NAME', ''))
 
-DEBUG = True
+# ── Data directory (persistent on Azure: /home/data, local: data/) ────────────
+_DATA_DIR = Path('/home/data') if _ON_AZURE else BASE_DIR / 'data'
+_DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+# ── Secret key ───────────────────────────────────────────────────────────────
+# On Azure: set DJANGO_SECRET_KEY in App Service → Configuration → App settings
+# Locally:  persisted in data/.secret_key so it survives restarts
+_SECRET_KEY_ENV = os.environ.get('DJANGO_SECRET_KEY', '').strip()
+if _SECRET_KEY_ENV:
+    SECRET_KEY = _SECRET_KEY_ENV
+else:
+    _KEY_FILE = _DATA_DIR / '.secret_key'
+    if _KEY_FILE.exists():
+        SECRET_KEY = _KEY_FILE.read_text().strip()
+    else:
+        SECRET_KEY = secrets.token_hex(32)
+        _KEY_FILE.write_text(SECRET_KEY)
+
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
@@ -28,6 +40,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -60,7 +73,7 @@ WSGI_APPLICATION = 'brueggen.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'data' / 'db.sqlite3',
+        'NAME': _DATA_DIR / 'db.sqlite3',
     }
 }
 
@@ -73,6 +86,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

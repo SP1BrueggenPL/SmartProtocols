@@ -30,6 +30,9 @@ desktop.ini
 # IDE
 .vscode/
 .idea/
+
+# Claude Code
+.claude/
 *.sublime-project
 *.sublime-workspace
 
