@@ -50,7 +50,7 @@ def send_email(settings, to_emails, subject, body, pdf_bytes=None, pdf_filename=
                 {
                     'name':          pdf_filename,
                     'contentType':   'application/pdf',
-                    'contentInBytes': base64.b64encode(pdf_bytes).decode('ascii'),
+                    'contentInBase64': base64.b64encode(pdf_bytes).decode('ascii'),
                 }
             ]
 
