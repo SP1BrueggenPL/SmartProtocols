@@ -37,24 +37,38 @@ LOGO_PATH = os.path.join(os.path.dirname(__file__), 'static', 'img', 'brueggen_l
 # ── Rejestracja fontów ───────────────────────────────────────────────
 _FONTS_OK = False
 
+# Bundled Liberation Sans fonts (metrics-compatible with Arial, SIL OFL)
+_BUNDLED_FONTS = os.path.join(os.path.dirname(__file__), 'static', 'fonts')
+
 def _reg_fonts():
     global _FONTS_OK
     if _FONTS_OK:
         return
-    wf = r'C:\Windows\Fonts'
+    WIN = r'C:\Windows\Fonts'
+    LIN = '/usr/share/fonts/truetype/liberation'
+    # (name, windows_file, liberation_file)
     pairs = [
-        ('Arial',            'arial.ttf'),
-        ('Arial-Bold',       'arialbd.ttf'),
-        ('Arial-Italic',     'ariali.ttf'),
-        ('Arial-BoldItalic', 'arialbi.ttf'),
-        ('Georgia-BI',       'georgiaz.ttf'),  # Georgia Bold Italic — logo
+        ('Arial',            'arial.ttf',    'LiberationSans-Regular.ttf'),
+        ('Arial-Bold',       'arialbd.ttf',  'LiberationSans-Bold.ttf'),
+        ('Arial-Italic',     'ariali.ttf',   'LiberationSans-Italic.ttf'),
+        ('Arial-BoldItalic', 'arialbi.ttf',  'LiberationSans-BoldItalic.ttf'),
     ]
-    for name, fname in pairs:
-        path = os.path.join(wf, fname)
-        try:
-            pdfmetrics.registerFont(TTFont(name, path))
-        except Exception:
-            pass
+    for name, win_f, lib_f in pairs:
+        for path in (
+            os.path.join(WIN, win_f),
+            os.path.join(LIN, lib_f),
+            os.path.join(_BUNDLED_FONTS, lib_f),
+        ):
+            try:
+                pdfmetrics.registerFont(TTFont(name, path))
+                break
+            except Exception:
+                continue
+    # Georgia Bold Italic — only needed for text logo fallback on Windows
+    try:
+        pdfmetrics.registerFont(TTFont('Georgia-BI', os.path.join(WIN, 'georgiaz.ttf')))
+    except Exception:
+        pass
     _FONTS_OK = True
 
 # ── Stałe teksty zobowiązań ──────────────────────────────────────────

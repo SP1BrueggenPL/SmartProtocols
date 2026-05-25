@@ -57,12 +57,16 @@ def send_email(settings, to_emails, subject, body, pdf_bytes=None, pdf_filename=
         poller = client.begin_send(message)
         result = poller.result()
 
-        status = result.get('status', '')
+        # SDK >= 1.0 returns EmailSendResult object; older versions return a dict
+        status = str(getattr(result, 'status', None) or result.get('status', ''))
         if status == 'Succeeded':
             return True, 'Wysłano pomyślnie przez Azure Communication Services.'
 
         error_detail = ''
-        if result.get('error'):
+        err = getattr(result, 'error', None)
+        if err:
+            error_detail = getattr(err, 'message', str(err))
+        elif callable(getattr(result, 'get', None)) and result.get('error'):
             error_detail = result['error'].get('message', str(result['error']))
         return False, f'Azure zwróciło status "{status}". {error_detail}'.strip()
 
