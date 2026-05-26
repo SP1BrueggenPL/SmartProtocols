@@ -145,6 +145,10 @@
               {% endif %}
               <a href="{% url 'document_pdf' doc.pk %}" class="btn btn-sm btn-outline-danger" title="PDF">
                 <i class="bi bi-file-earmark-pdf"></i></a>
+              {% if request.user.is_staff %}
+              <a href="{% url 'document_delete' doc.pk %}" class="btn btn-sm btn-outline-danger" title="Usuń">
+                <i class="bi bi-trash"></i></a>
+              {% endif %}
             </div>
           </td>
         </tr>

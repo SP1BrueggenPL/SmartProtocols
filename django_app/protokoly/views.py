@@ -425,6 +425,21 @@ def document_send(request, pk):
 
 
 # ---------------------------------------------------------------------------
+# Document – delete (admin only)
+# ---------------------------------------------------------------------------
+
+@user_passes_test(_is_admin, login_url='dashboard')
+def document_delete(request, pk):
+    doc = get_object_or_404(Document, pk=pk)
+    if request.method == 'POST':
+        doc_number = doc.doc_number
+        doc.delete()
+        messages.success(request, f'Protokół {doc_number} został usunięty.')
+        return redirect('dashboard')
+    return render(request, 'document_confirm_delete.html', {'document': doc})
+
+
+# ---------------------------------------------------------------------------
 # Settings
 # ---------------------------------------------------------------------------
 
