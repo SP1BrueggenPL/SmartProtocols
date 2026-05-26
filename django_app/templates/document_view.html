@@ -15,9 +15,9 @@
     </div>
   </div>
   <div class="d-flex gap-2 flex-wrap">
-    {% if not document.is_signed %}
     <a href="{% url 'document_edit' document.pk %}" class="btn btn-outline-secondary">
       <i class="bi bi-pencil me-1"></i>Edytuj</a>
+    {% if not document.is_signed %}
     <a href="{% url 'document_sign' document.pk %}" class="btn btn-success">
       <i class="bi bi-pen me-1"></i>Podpisz</a>
     {% endif %}
@@ -27,7 +27,7 @@
     <form method="post" action="{% url 'document_send' document.pk %}" class="m-0">
       {% csrf_token %}
       <button type="submit" class="btn btn-primary"
-              onclick="return confirm('Wysłać protokół do:\n{% if document.issuer_email %}• {{ document.issuer_email }}\n{% endif %}• {{ document.receiver_email }}\n• księgowość?')">
+              onclick="return confirm('Wysłać protokół do:\n{% if document.issuer_email %}• {{ document.issuer_email }}\n{% endif %}• {{ document.receiver_email }}{% if document.send_to_accounting %}\n• księgowość{% endif %}?')">
         <i class="bi bi-send me-1"></i>
         {% if document.is_sent %}Wyślij ponownie{% else %}Wyślij email{% endif %}
       </button>
