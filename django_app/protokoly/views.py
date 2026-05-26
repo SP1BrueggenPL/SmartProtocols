@@ -285,36 +285,39 @@ def document_edit(request, pk):
         _save_items(request, doc)
 
         if was_sent and was_signed:
-            settings_data = _effective_settings()
-            items         = list(doc.items.order_by('sort_order'))
-            pdf_bytes     = generate_pdf(doc, items)
-            to_list       = _build_recipients(doc, settings_data)
-            op_label      = 'wydania' if doc.operation == 'wydanie' else 'zwrotu'
-            subject = f'Poprawiony protokół {op_label} sprzętu IT ({doc.doc_type_label}) – {doc.doc_number}'
-            body = (
-                f'Szanowni Państwo,\n\n'
-                f'Protokół {doc.doc_number} został zaktualizowany.\n'
-                f'W załączniku przesyłamy poprawiony dokument.\n\n'
-                f'Numer dokumentu: {doc.doc_number}\n'
-                f'Data: {doc.doc_date_str}\n'
-                f'Przekazujący: {doc.issuer_name}\n'
-                f'Przyjmujący: {doc.receiver_name}\n\n'
-                f'Z poważaniem,\nDział IT Brueggen Polska Sp. z o.o.'
-            )
-            success, msg = send_email(
-                settings=settings_data,
-                to_emails=to_list,
-                subject=subject,
-                body=body,
-                pdf_bytes=pdf_bytes,
-                pdf_filename=f'{doc.doc_number}.pdf',
-            )
-            if success:
-                doc.email_sent_at = timezone.now()
-                doc.save()
-                messages.success(request, f'Protokół zaktualizowany i wysłany ponownie do: {", ".join(to_list)}')
-            else:
-                messages.warning(request, f'Protokół zaktualizowany, ale błąd wysyłki: {msg}')
+            try:
+                settings_data = _effective_settings()
+                items         = list(doc.items.order_by('sort_order'))
+                pdf_bytes     = generate_pdf(doc, items)
+                to_list       = _build_recipients(doc, settings_data)
+                op_label      = 'wydania' if doc.operation == 'wydanie' else 'zwrotu'
+                subject = f'Poprawiony protokół {op_label} sprzętu IT ({doc.doc_type_label}) – {doc.doc_number}'
+                body = (
+                    f'Szanowni Państwo,\n\n'
+                    f'Protokół {doc.doc_number} został zaktualizowany.\n'
+                    f'W załączniku przesyłamy poprawiony dokument.\n\n'
+                    f'Numer dokumentu: {doc.doc_number}\n'
+                    f'Data: {doc.doc_date_str}\n'
+                    f'Przekazujący: {doc.issuer_name}\n'
+                    f'Przyjmujący: {doc.receiver_name}\n\n'
+                    f'Z poważaniem,\nDział IT Brueggen Polska Sp. z o.o.'
+                )
+                success, msg = send_email(
+                    settings=settings_data,
+                    to_emails=to_list,
+                    subject=subject,
+                    body=body,
+                    pdf_bytes=pdf_bytes,
+                    pdf_filename=f'{doc.doc_number}.pdf',
+                )
+                if success:
+                    doc.email_sent_at = timezone.now()
+                    doc.save()
+                    messages.success(request, f'Protokół zaktualizowany i wysłany ponownie do: {", ".join(to_list)}')
+                else:
+                    messages.warning(request, f'Protokół zaktualizowany, ale błąd wysyłki: {msg}')
+            except Exception as exc:
+                messages.warning(request, f'Protokół zaktualizowany, ale nie udało się wysłać maila: {exc}')
         else:
             messages.success(request, 'Dokument został zaktualizowany.')
 
