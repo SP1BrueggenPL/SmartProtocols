@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Usuń {{ document.doc_number }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{% url 'document_view' document.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="mb-0 fw-bold"><i class="bi bi-trash me-2 text-danger"></i>Usuń protokół</h4>
+</div>
+
+<div class="card border-danger border-0 shadow-sm" style="max-width:560px">
+  <div class="card-body p-4">
+    <p class="mb-1">Czy na pewno chcesz usunąć protokół:</p>
+    <p class="fw-bold fs-5 mb-1">{{ document.doc_number }}</p>
+    <p class="text-muted mb-4">
+      {{ document.doc_type_label }} &mdash; {{ document.operation }} &mdash;
+      {{ document.issuer_name }} → {{ document.receiver_name }}
+    </p>
+    <div class="alert alert-danger py-2 mb-4">
+      <i class="bi bi-exclamation-triangle me-2"></i>Tej operacji nie można cofnąć.
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="d-flex gap-2">
+        <a href="{% url 'document_view' document.pk %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-circle me-1"></i>Anuluj</a>
+        <button type="submit" class="btn btn-danger">
+          <i class="bi bi-trash me-1"></i>Usuń protokół</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

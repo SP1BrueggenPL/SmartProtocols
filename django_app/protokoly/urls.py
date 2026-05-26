@@ -12,7 +12,8 @@ urlpatterns = [
     path('documents/<int:pk>/edit/',  views.document_edit,   name='document_edit'),
     path('documents/<int:pk>/sign/',  views.document_sign,   name='document_sign'),
     path('documents/<int:pk>/pdf/',   views.document_pdf,    name='document_pdf'),
-    path('documents/<int:pk>/send/',  views.document_send,   name='document_send'),
+    path('documents/<int:pk>/send/',   views.document_send,   name='document_send'),
+    path('documents/<int:pk>/delete/', views.document_delete, name='document_delete'),
     path('settings/',                 views.settings_view,          name='settings'),
     path('change-password/',          views.change_password_forced, name='change_password_forced'),
 ]
