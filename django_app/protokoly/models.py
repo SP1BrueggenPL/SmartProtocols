@@ -54,7 +54,11 @@ class Document(models.Model):
 
     @property
     def doc_date_str(self):
-        return self.doc_date.strftime('%Y-%m-%d') if self.doc_date else ''
+        if not self.doc_date:
+            return ''
+        if hasattr(self.doc_date, 'strftime'):
+            return self.doc_date.strftime('%Y-%m-%d')
+        return str(self.doc_date)
 
 
 class DocumentItem(models.Model):
