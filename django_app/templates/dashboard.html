@@ -96,7 +96,7 @@
       <thead class="table-header">
         <tr>
           <th>Nr dokumentu</th><th>Typ</th><th>Operacja</th>
-          <th>Przyjmujący</th><th>Data</th><th>Status</th>
+          <th>Przekazujący</th><th>Przyjmujący</th><th>Data</th><th>Status</th>
           <th class="text-end">Akcje</th>
         </tr>
       </thead>
@@ -118,6 +118,7 @@
                 <i class="bi bi-box-arrow-in-down-left me-1"></i>Zwrot</span>
             {% endif %}
           </td>
+          <td>{{ doc.issuer_name }}</td>
           <td>{{ doc.receiver_name }}</td>
           <td><span class="text-muted">{{ doc.doc_date }}</span></td>
           <td>
@@ -136,9 +137,9 @@
             <div class="d-flex gap-1 justify-content-end">
               <a href="{% url 'document_view' doc.pk %}" class="btn btn-sm btn-outline-primary" title="Podgląd">
                 <i class="bi bi-eye"></i></a>
-              {% if not doc.is_signed %}
               <a href="{% url 'document_edit' doc.pk %}" class="btn btn-sm btn-outline-secondary" title="Edytuj">
                 <i class="bi bi-pencil"></i></a>
+              {% if not doc.is_signed %}
               <a href="{% url 'document_sign' doc.pk %}" class="btn btn-sm btn-outline-success" title="Podpisz">
                 <i class="bi bi-pen"></i></a>
               {% endif %}

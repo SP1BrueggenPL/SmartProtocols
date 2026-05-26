@@ -24,6 +24,7 @@ class Document(models.Model):
     receiver_name  = models.CharField(max_length=200, verbose_name='Przyjmujący')
     receiver_email = models.EmailField(verbose_name='Email przyjmującego')
     network_name   = models.CharField(max_length=100, blank=True, default='', verbose_name='Nazwa sieciowa')
+    send_to_accounting = models.BooleanField(default=True, verbose_name='Wyślij do księgowości')
     sig_issuer     = models.TextField(blank=True, default='', verbose_name='Podpis przekazującego')
     sig_receiver   = models.TextField(blank=True, default='', verbose_name='Podpis przyjmującego')
     signed_at      = models.DateTimeField(null=True, blank=True)

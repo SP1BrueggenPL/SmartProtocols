@@ -38,6 +38,20 @@ def _is_admin(user):
     return user.is_authenticated and user.is_staff
 
 
+def _build_recipients(doc, settings_data):
+    """Buduje unikalną listę odbiorców maila dla danego dokumentu."""
+    seen, to_list = set(), []
+    candidates = [doc.receiver_email, doc.issuer_email]
+    if doc.send_to_accounting:
+        candidates.append(settings_data.get('accounting_email', ''))
+    for addr in candidates:
+        addr = (addr or '').strip()
+        if addr and addr not in seen:
+            seen.add(addr)
+            to_list.append(addr)
+    return to_list
+
+
 def _effective_settings():
     """Zwraca ustawienia email: env var ma priorytet nad bazą danych."""
     data = AppSetting.as_dict()
@@ -215,16 +229,17 @@ def document_create(request):
 
     doc_type = request.POST.get('doc_type', 'office')
     doc = Document(
-        doc_number    = _generate_doc_number(doc_type),
-        doc_type      = doc_type,
-        operation     = request.POST.get('operation', 'wydanie'),
-        doc_date      = request.POST.get('doc_date', str(date.today())),
-        issuer_name   = request.POST.get('issuer_name', '').strip(),
-        issuer_email  = request.POST.get('issuer_email', '').strip(),
-        receiver_name = request.POST.get('receiver_name', '').strip(),
-        receiver_email= request.POST.get('receiver_email', '').strip(),
-        network_name  = request.POST.get('network_name', '').strip() if doc_type == 'office' else '',
-        created_by    = request.user,
+        doc_number         = _generate_doc_number(doc_type),
+        doc_type           = doc_type,
+        operation          = request.POST.get('operation', 'wydanie'),
+        doc_date           = request.POST.get('doc_date', str(date.today())),
+        issuer_name        = request.POST.get('issuer_name', '').strip(),
+        issuer_email       = request.POST.get('issuer_email', '').strip(),
+        receiver_name      = request.POST.get('receiver_name', '').strip(),
+        receiver_email     = request.POST.get('receiver_email', '').strip(),
+        network_name       = request.POST.get('network_name', '').strip() if doc_type == 'office' else '',
+        send_to_accounting = bool(request.POST.get('send_to_accounting')),
+        created_by         = request.user,
     )
     doc.save()
     _save_items(request, doc)
@@ -251,24 +266,58 @@ def document_view(request, pk):
 @login_required
 def document_edit(request, pk):
     doc = get_object_or_404(Document, pk=pk)
-    if doc.sig_issuer:
-        messages.warning(request, 'Dokument jest już podpisany i nie może być edytowany.')
-        return redirect('document_view', pk=pk)
 
     if request.method == 'POST':
-        doc.operation      = request.POST.get('operation', 'wydanie')
-        doc.doc_date       = request.POST.get('doc_date', str(date.today()))
-        doc.issuer_name    = request.POST.get('issuer_name', '').strip()
-        doc.issuer_email   = request.POST.get('issuer_email', '').strip()
-        doc.receiver_name  = request.POST.get('receiver_name', '').strip()
-        doc.receiver_email = request.POST.get('receiver_email', '').strip()
-        doc.network_name   = request.POST.get('network_name', '').strip() if doc.doc_type == 'office' else ''
+        was_sent   = doc.is_sent
+        was_signed = doc.is_signed
+
+        doc.operation          = request.POST.get('operation', 'wydanie')
+        doc.doc_date           = request.POST.get('doc_date', str(date.today()))
+        doc.issuer_name        = request.POST.get('issuer_name', '').strip()
+        doc.issuer_email       = request.POST.get('issuer_email', '').strip()
+        doc.receiver_name      = request.POST.get('receiver_name', '').strip()
+        doc.receiver_email     = request.POST.get('receiver_email', '').strip()
+        doc.network_name       = request.POST.get('network_name', '').strip() if doc.doc_type == 'office' else ''
+        doc.send_to_accounting = bool(request.POST.get('send_to_accounting'))
         doc.save()
 
         doc.items.all().delete()
         _save_items(request, doc)
 
-        messages.success(request, 'Dokument został zaktualizowany.')
+        if was_sent and was_signed:
+            settings_data = _effective_settings()
+            items         = list(doc.items.order_by('sort_order'))
+            pdf_bytes     = generate_pdf(doc, items)
+            to_list       = _build_recipients(doc, settings_data)
+            op_label      = 'wydania' if doc.operation == 'wydanie' else 'zwrotu'
+            subject = f'Poprawiony protokół {op_label} sprzętu IT ({doc.doc_type_label}) – {doc.doc_number}'
+            body = (
+                f'Szanowni Państwo,\n\n'
+                f'Protokół {doc.doc_number} został zaktualizowany.\n'
+                f'W załączniku przesyłamy poprawiony dokument.\n\n'
+                f'Numer dokumentu: {doc.doc_number}\n'
+                f'Data: {doc.doc_date_str}\n'
+                f'Przekazujący: {doc.issuer_name}\n'
+                f'Przyjmujący: {doc.receiver_name}\n\n'
+                f'Z poważaniem,\nDział IT Brueggen Polska Sp. z o.o.'
+            )
+            success, msg = send_email(
+                settings=settings_data,
+                to_emails=to_list,
+                subject=subject,
+                body=body,
+                pdf_bytes=pdf_bytes,
+                pdf_filename=f'{doc.doc_number}.pdf',
+            )
+            if success:
+                doc.email_sent_at = timezone.now()
+                doc.save()
+                messages.success(request, f'Protokół zaktualizowany i wysłany ponownie do: {", ".join(to_list)}')
+            else:
+                messages.warning(request, f'Protokół zaktualizowany, ale błąd wysyłki: {msg}')
+        else:
+            messages.success(request, 'Dokument został zaktualizowany.')
+
         return redirect('document_view', pk=pk)
 
     items = doc.items.order_by('sort_order')
@@ -352,13 +401,7 @@ def document_send(request, pk):
         f'Z poważaniem,\nDział IT Brueggen Polska Sp. z o.o.'
     )
 
-    seen, to_list = set(), []
-    for addr in [doc.receiver_email, doc.issuer_email,
-                 settings_data.get('accounting_email', '')]:
-        addr = addr.strip()
-        if addr and addr not in seen:
-            seen.add(addr)
-            to_list.append(addr)
+    to_list = _build_recipients(doc, settings_data)
     success, msg = send_email(
         settings=settings_data,
         to_emails=to_list,
