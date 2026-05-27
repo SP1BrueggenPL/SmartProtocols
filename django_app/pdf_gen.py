@@ -302,38 +302,47 @@ def _phone_table(items):
     ph = items[0] if items else {}
     col_w = [CW * 0.45, CW * 0.55]
 
-    def acc_label(field, name):
-        v = _v(ph, field)
-        return ("✓ " if v else "✗ ") + name
+    rows = [[_th("Pole"), _th("Wartość")]]
 
-    rows = [
-        [_th("Pole"), _th("Wartość")],
-        [_td("Rodzaj telefonu"),   _td(_v(ph, 'phone_type'))],
-        [_td("Nr IMEI (1)"),        _td(_v(ph, 'imei'))],
-        [_td("Nr seryjny"),         _td(_v(ph, 'serial_number'))],
-        [_td("Nazwa wewnętrzna"),  _td(_v(ph, 'internal_name'))],
-        [_td("Nr telefonu"),        _td(_v(ph, 'phone_number'))],
-        [_td("Nr karty SIM"),       _td(_v(ph, 'sim_number'))],
-        [_td("Nr PIN telefonu"),    _td(_v(ph, 'pin_phone'))],
-        [_td("Nr PIN karty SIM"),   _td(_v(ph, 'pin_sim'))],
-        # Wiersz akcesoriów (colspan 2) — zgodnie z HTML
-        [
-            Paragraph(
-                "  ".join([
-                    acc_label('acc_foil',       'Folia/Szybka'),
-                    acc_label('acc_case',        'Etui'),
-                    acc_label('acc_charger',     'Ładowarka'),
-                    acc_label('acc_headphones',  'Słuchawki'),
-                ]),
-                _S('acc', fontSize=9, leading=11),
-            ),
-            Paragraph("", _S()),
-        ],
-        [_td("Pozostałe / uwagi"), _td(_v(ph, 'notes'))],
-    ]
+    # Only render rows that have a value
+    for label, field in [
+        ('Rodzaj telefonu',  'phone_type'),
+        ('Nr IMEI (1)',      'imei'),
+        ('Nr seryjny',       'serial_number'),
+        ('Nazwa wewnętrzna', 'internal_name'),
+        ('Nr telefonu',      'phone_number'),
+        ('Nr karty SIM',     'sim_number'),
+        ('Nr PIN telefonu',  'pin_phone'),
+        ('Nr PIN karty SIM', 'pin_sim'),
+    ]:
+        val = _v(ph, field)
+        if val:
+            rows.append([_td(label), _td(val)])
+
+    # Accessories row spans both columns; use ASCII brackets (font-safe)
+    def acc_label(field, name):
+        return ('[X] ' if _v(ph, field) else '[ ] ') + name
+
+    acc_idx = len(rows)
+    rows.append([
+        Paragraph(
+            '   '.join([
+                acc_label('acc_foil',       'Folia/Szybka'),
+                acc_label('acc_case',       'Etui'),
+                acc_label('acc_charger',    'Ladowarka'),
+                acc_label('acc_headphones', 'Sluchawki'),
+            ]),
+            _S('acc', fontSize=9, leading=11),
+        ),
+        Paragraph('', _S()),
+    ])
+
+    notes = _v(ph, 'notes')
+    if notes:
+        rows.append([_td('Pozostale / uwagi'), _td(notes)])
 
     style = _table_style_base() + [
-        ('SPAN', (0, 9), (1, 9)),  # colspan dla wiersza akcesoriów
+        ('SPAN', (0, acc_idx), (1, acc_idx)),
     ]
     t = Table(rows, colWidths=col_w)
     t.setStyle(TableStyle(style))
