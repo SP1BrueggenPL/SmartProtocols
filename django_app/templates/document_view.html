@@ -23,7 +23,7 @@
       <i class="bi bi-pencil me-1"></i>Edytuj</a>
     {% if not document.is_signed %}
     <a href="{% url 'document_sign' document.pk %}" class="btn btn-success">
-      <i class="bi bi-pen me-1"></i>Podpisz</a>
+      <i class="bi bi-pen me-1"></i>{% if document.is_partially_signed %}Dodaj podpis{% else %}Podpisz{% endif %}</a>
     {% endif %}
     <a href="{% url 'document_pdf' document.pk %}" class="btn btn-outline-danger" target="_blank">
       <i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
@@ -48,6 +48,10 @@
   {% elif document.is_signed %}
     <span class="badge fs-6 bg-success-subtle text-success border border-success-subtle px-3 py-2">
       <i class="bi bi-pen me-1"></i>Podpisany {% if document.signed_at %}{{ document.signed_at|date:"Y-m-d H:i" }}{% endif %}</span>
+  {% elif document.is_partially_signed %}
+    <span class="badge fs-6 bg-warning-subtle text-warning border border-warning-subtle px-3 py-2">
+      <i class="bi bi-pen me-1"></i>Oczekuje na drugi podpis
+      {% if document.sig_issuer %}(brak: przyjmujący){% else %}(brak: przekazujący){% endif %}</span>
   {% else %}
     <span class="badge fs-6 bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2">
       <i class="bi bi-pencil me-1"></i>Roboczy – oczekuje na podpis</span>
@@ -200,7 +204,7 @@
         </div>
         {% if not document.is_signed %}
         <a href="{% url 'document_sign' document.pk %}" class="btn btn-success w-100">
-          <i class="bi bi-pen me-2"></i>Złóż podpisy</a>
+          <i class="bi bi-pen me-2"></i>{% if document.is_partially_signed %}Dodaj brakujący podpis{% else %}Złóż podpisy{% endif %}</a>
         {% endif %}
       </div>
     </div>

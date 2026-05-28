@@ -176,18 +176,22 @@ def dashboard(request):
     filter_status = request.GET.get('status', '')
     search_query  = request.GET.get('q', '').strip()
 
+    from django.db.models import Q
+    _partial_q = (Q(sig_issuer='') & ~Q(sig_receiver='')) | (~Q(sig_issuer='') & Q(sig_receiver=''))
+
     qs = Document.objects.all()
     if doc_type:
         qs = qs.filter(doc_type=doc_type)
     if filter_status == 'draft':
-        qs = qs.filter(sig_issuer='')
+        qs = qs.filter(sig_issuer='', sig_receiver='')
+    elif filter_status == 'partial':
+        qs = qs.filter(_partial_q)
     elif filter_status == 'signed':
-        qs = qs.exclude(sig_issuer='').filter(email_sent_at__isnull=True)
+        qs = qs.exclude(sig_issuer='').exclude(sig_receiver='').filter(email_sent_at__isnull=True)
     elif filter_status == 'sent':
         qs = qs.filter(email_sent_at__isnull=False)
 
     if search_query:
-        from django.db.models import Q
         qs = qs.filter(
             Q(doc_number__icontains=search_query) |
             Q(receiver_name__icontains=search_query) |
@@ -197,10 +201,11 @@ def dashboard(request):
         )
 
     stats = {
-        'total':  qs.count(),
-        'draft':  qs.filter(sig_issuer='').count(),
-        'signed': qs.exclude(sig_issuer='').filter(email_sent_at__isnull=True).count(),
-        'sent':   qs.filter(email_sent_at__isnull=False).count(),
+        'total':   qs.count(),
+        'draft':   qs.filter(sig_issuer='', sig_receiver='').count(),
+        'partial': qs.filter(_partial_q).count(),
+        'signed':  qs.exclude(sig_issuer='').exclude(sig_receiver='').filter(email_sent_at__isnull=True).count(),
+        'sent':    qs.filter(email_sent_at__isnull=False).count(),
     }
 
     return render(request, 'dashboard.html', {
@@ -338,19 +343,31 @@ def document_sign(request, pk):
     items = doc.items.order_by('sort_order')
 
     if request.method == 'POST':
-        sig_issuer   = request.POST.get('sig_issuer', '').strip()
-        sig_receiver = request.POST.get('sig_receiver', '').strip()
+        sig_issuer_new   = request.POST.get('sig_issuer', '').strip()
+        sig_receiver_new = request.POST.get('sig_receiver', '').strip()
 
-        if not sig_issuer or not sig_receiver:
-            messages.warning(request, 'Oba podpisy są wymagane.')
+        updated = False
+        if sig_issuer_new:
+            doc.sig_issuer = sig_issuer_new
+            updated = True
+        if sig_receiver_new:
+            doc.sig_receiver = sig_receiver_new
+            updated = True
+
+        if not updated:
+            messages.warning(request, 'Proszę złożyć co najmniej jeden podpis.')
             return render(request, 'document_sign.html', {'document': doc, 'items': items})
 
-        doc.sig_issuer   = sig_issuer
-        doc.sig_receiver = sig_receiver
-        doc.signed_at    = timezone.now()
+        if doc.sig_issuer and doc.sig_receiver and not doc.signed_at:
+            doc.signed_at = timezone.now()
         doc.save()
 
-        messages.success(request, 'Podpisy zostały zapisane pomyślnie.')
+        if doc.is_signed:
+            messages.success(request, 'Oba podpisy zostały zapisane. Dokument jest gotowy do wysyłki.')
+        elif doc.sig_issuer:
+            messages.info(request, 'Podpis przekazującego zapisany. Brakuje jeszcze podpisu przyjmującego.')
+        else:
+            messages.info(request, 'Podpis przyjmującego zapisany. Brakuje jeszcze podpisu przekazującego.')
         return redirect('document_view', pk=pk)
 
     return render(request, 'document_sign.html', {'document': doc, 'items': items})

@@ -45,6 +45,10 @@ class Document(models.Model):
         return bool(self.sig_issuer and self.sig_receiver)
 
     @property
+    def is_partially_signed(self):
+        return bool(self.sig_issuer or self.sig_receiver) and not self.is_signed
+
+    @property
     def is_sent(self):
         return bool(self.email_sent_at)
 

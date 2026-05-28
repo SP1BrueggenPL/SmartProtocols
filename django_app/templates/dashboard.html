@@ -46,11 +46,13 @@
         <a href="{% url 'dashboard' %}?type=produkcja{% if filter_status %}&status={{ filter_status }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
            class="btn {% if filter_type == 'produkcja' %}btn-primary{% else %}btn-outline-primary{% endif %}">Produkcja</a>
       </div>
-      <div class="btn-group btn-group-sm">
+      <div class="btn-group btn-group-sm flex-wrap">
         <a href="{% url 'dashboard' %}?{% if filter_type %}type={{ filter_type }}&{% endif %}{% if search_query %}q={{ search_query }}{% endif %}"
            class="btn {% if not filter_status %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Wszystkie</a>
         <a href="{% url 'dashboard' %}?status=draft{% if filter_type %}&type={{ filter_type }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
            class="btn {% if filter_status == 'draft' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Robocze</a>
+        <a href="{% url 'dashboard' %}?status=partial{% if filter_type %}&type={{ filter_type }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+           class="btn {% if filter_status == 'partial' %}btn-warning{% else %}btn-outline-warning{% endif %}">Częściowo podpisane</a>
         <a href="{% url 'dashboard' %}?status=signed{% if filter_type %}&type={{ filter_type }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
            class="btn {% if filter_status == 'signed' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Podpisane</a>
         <a href="{% url 'dashboard' %}?status=sent{% if filter_type %}&type={{ filter_type }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
@@ -62,25 +64,31 @@
 
 {# Stats #}
 <div class="row g-3 mb-4">
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-4 col-lg">
     <div class="stat-card bg-white border rounded-3 p-3 text-center shadow-sm">
       <div class="stat-number text-primary">{{ stats.total }}</div>
       <div class="stat-label">Łącznie</div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-4 col-lg">
     <div class="stat-card bg-white border rounded-3 p-3 text-center shadow-sm">
-      <div class="stat-number text-warning">{{ stats.draft }}</div>
+      <div class="stat-number text-secondary">{{ stats.draft }}</div>
       <div class="stat-label">Robocze</div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-4 col-lg">
+    <div class="stat-card bg-white border rounded-3 p-3 text-center shadow-sm">
+      <div class="stat-number text-warning">{{ stats.partial }}</div>
+      <div class="stat-label">Częściowo</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg">
     <div class="stat-card bg-white border rounded-3 p-3 text-center shadow-sm">
       <div class="stat-number text-success">{{ stats.signed }}</div>
       <div class="stat-label">Podpisane</div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-4 col-lg">
     <div class="stat-card bg-white border rounded-3 p-3 text-center shadow-sm">
       <div class="stat-number text-info">{{ stats.sent }}</div>
       <div class="stat-label">Wysłane</div>
@@ -128,6 +136,9 @@
             {% elif doc.is_signed %}
               <span class="badge bg-success-subtle text-success border border-success-subtle">
                 <i class="bi bi-pen me-1"></i>Podpisany</span>
+            {% elif doc.is_partially_signed %}
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                <i class="bi bi-pen me-1"></i>Częściowo</span>
             {% else %}
               <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
                 <i class="bi bi-pencil me-1"></i>Roboczy</span>
@@ -140,7 +151,7 @@
               <a href="{% url 'document_edit' doc.pk %}" class="btn btn-sm btn-outline-secondary" title="Edytuj">
                 <i class="bi bi-pencil"></i></a>
               {% if not doc.is_signed %}
-              <a href="{% url 'document_sign' doc.pk %}" class="btn btn-sm btn-outline-success" title="Podpisz">
+              <a href="{% url 'document_sign' doc.pk %}" class="btn btn-sm btn-outline-success" title="{% if doc.is_partially_signed %}Dodaj podpis{% else %}Podpisz{% endif %}">
                 <i class="bi bi-pen"></i></a>
               {% endif %}
               <a href="{% url 'document_pdf' doc.pk %}" class="btn btn-sm btn-outline-danger" title="PDF">

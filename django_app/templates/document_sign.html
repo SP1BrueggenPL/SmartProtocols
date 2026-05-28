@@ -43,10 +43,22 @@
   </div>
 </div>
 
+{% if document.sig_issuer and document.sig_receiver %}
+<div class="alert alert-success">
+  <i class="bi bi-check-circle-fill me-2"></i>
+  Dokument jest już w pełni podpisany. Możesz wrócić do podglądu dokumentu.
+</div>
+<div class="mt-3">
+  <a href="{% url 'document_view' document.pk %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Wróć do dokumentu
+  </a>
+</div>
+{% else %}
+
 <form method="post" id="signForm">
   {% csrf_token %}
-  <input type="hidden" name="sig_issuer"   id="sig_issuer_data">
-  <input type="hidden" name="sig_receiver" id="sig_receiver_data">
+  {% if not document.sig_issuer %}<input type="hidden" name="sig_issuer" id="sig_issuer_data">{% endif %}
+  {% if not document.sig_receiver %}<input type="hidden" name="sig_receiver" id="sig_receiver_data">{% endif %}
 
   <div class="row g-4">
     {# Przekazujący #}
@@ -56,14 +68,24 @@
           <span class="fw-semibold">
             <i class="bi bi-person-badge me-2 text-primary"></i>Podpis przekazującego
           </span>
+          {% if not document.sig_issuer %}
           <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearPad('issuer')">
             <i class="bi bi-eraser me-1"></i>Wyczyść
           </button>
+          {% endif %}
         </div>
         <div class="card-body p-3">
           <p class="text-muted small mb-2">
             <i class="bi bi-person me-1"></i><strong>{{ document.issuer_name }}</strong>
           </p>
+          {% if document.sig_issuer %}
+          <div class="alert alert-success py-2 mb-3">
+            <i class="bi bi-check-circle-fill me-2"></i>Podpis już złożony
+          </div>
+          <div class="sig-preview border rounded p-1 bg-white">
+            <img src="{{ document.sig_issuer }}" alt="Podpis przekazującego" class="img-fluid">
+          </div>
+          {% else %}
           <div class="sig-pad-wrapper">
             <canvas id="sig_issuer" class="sig-canvas"></canvas>
             <div class="sig-hint" id="hint_issuer">
@@ -71,6 +93,7 @@
               Złóż podpis tutaj
             </div>
           </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -82,14 +105,24 @@
           <span class="fw-semibold">
             <i class="bi bi-person me-2 text-success"></i>Podpis przyjmującego
           </span>
+          {% if not document.sig_receiver %}
           <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearPad('receiver')">
             <i class="bi bi-eraser me-1"></i>Wyczyść
           </button>
+          {% endif %}
         </div>
         <div class="card-body p-3">
           <p class="text-muted small mb-2">
             <i class="bi bi-person me-1"></i><strong>{{ document.receiver_name }}</strong>
           </p>
+          {% if document.sig_receiver %}
+          <div class="alert alert-success py-2 mb-3">
+            <i class="bi bi-check-circle-fill me-2"></i>Podpis już złożony
+          </div>
+          <div class="sig-preview border rounded p-1 bg-white">
+            <img src="{{ document.sig_receiver }}" alt="Podpis przyjmującego" class="img-fluid">
+          </div>
+          {% else %}
           <div class="sig-pad-wrapper">
             <canvas id="sig_receiver" class="sig-canvas"></canvas>
             <div class="sig-hint" id="hint_receiver">
@@ -97,6 +130,7 @@
               Złóż podpis tutaj
             </div>
           </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -104,7 +138,14 @@
 
   <div class="mt-4 d-flex gap-2 justify-content-end align-items-center">
     <span class="text-muted small me-auto">
-      <i class="bi bi-info-circle me-1"></i>Po zapisaniu podpisów dokument będzie gotowy do wysyłki.
+      <i class="bi bi-info-circle me-1"></i>
+      {% if document.sig_issuer and not document.sig_receiver %}
+        Brakuje podpisu przyjmującego. Możesz zapisać i wrócić później po podpis przekazującego.
+      {% elif document.sig_receiver and not document.sig_issuer %}
+        Brakuje podpisu przekazującego. Możesz zapisać i wrócić później po podpis przyjmującego.
+      {% else %}
+        Możesz złożyć jeden podpis teraz i dodać drugi później.
+      {% endif %}
     </span>
     <a href="{% url 'document_view' document.pk %}" class="btn btn-outline-secondary">
       <i class="bi bi-x-circle me-1"></i>Anuluj
@@ -114,14 +155,17 @@
     </button>
   </div>
 </form>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const issuerCanvas   = document.getElementById('sig_issuer');
-  const receiverCanvas = document.getElementById('sig_receiver');
+  const issuerAlreadySigned   = {% if document.sig_issuer %}true{% else %}false{% endif %};
+  const receiverAlreadySigned = {% if document.sig_receiver %}true{% else %}false{% endif %};
+
+  let padIssuer, padReceiver;
 
   function resizeCanvas(canvas) {
     const ratio   = Math.max(window.devicePixelRatio || 1, 1);
@@ -131,36 +175,76 @@ document.addEventListener('DOMContentLoaded', function () {
     canvas.getContext('2d').scale(ratio, ratio);
   }
 
-  resizeCanvas(issuerCanvas);
-  resizeCanvas(receiverCanvas);
+  if (!issuerAlreadySigned) {
+    const issuerCanvas = document.getElementById('sig_issuer');
+    if (issuerCanvas) {
+      resizeCanvas(issuerCanvas);
+      padIssuer = new SignaturePad(issuerCanvas, { backgroundColor: 'rgb(255,255,255)', penColor: '#1a1a1a', minWidth: 1.5, maxWidth: 3 });
+      issuerCanvas.addEventListener('pointerdown', () => {
+        document.getElementById('hint_issuer').style.display = 'none';
+      });
+    }
+  }
 
-  const padIssuer   = new SignaturePad(issuerCanvas,   { backgroundColor: 'rgb(255,255,255)', penColor: '#1a1a1a', minWidth: 1.5, maxWidth: 3 });
-  const padReceiver = new SignaturePad(receiverCanvas, { backgroundColor: 'rgb(255,255,255)', penColor: '#1a1a1a', minWidth: 1.5, maxWidth: 3 });
-
-  issuerCanvas.addEventListener('pointerdown',   () => { document.getElementById('hint_issuer').style.display   = 'none'; });
-  receiverCanvas.addEventListener('pointerdown', () => { document.getElementById('hint_receiver').style.display = 'none'; });
+  if (!receiverAlreadySigned) {
+    const receiverCanvas = document.getElementById('sig_receiver');
+    if (receiverCanvas) {
+      resizeCanvas(receiverCanvas);
+      padReceiver = new SignaturePad(receiverCanvas, { backgroundColor: 'rgb(255,255,255)', penColor: '#1a1a1a', minWidth: 1.5, maxWidth: 3 });
+      receiverCanvas.addEventListener('pointerdown', () => {
+        document.getElementById('hint_receiver').style.display = 'none';
+      });
+    }
+  }
 
   window.clearPad = function (who) {
-    if (who === 'issuer') {
+    if (who === 'issuer' && padIssuer) {
       padIssuer.clear();
       document.getElementById('hint_issuer').style.display = 'flex';
-    } else {
+    } else if (who === 'receiver' && padReceiver) {
       padReceiver.clear();
       document.getElementById('hint_receiver').style.display = 'flex';
     }
   };
 
-  document.getElementById('signForm').addEventListener('submit', function (e) {
-    if (padIssuer.isEmpty())   { e.preventDefault(); alert('Proszę złożyć podpis przekazującego.'); return; }
-    if (padReceiver.isEmpty()) { e.preventDefault(); alert('Proszę złożyć podpis przyjmującego.');  return; }
-    document.getElementById('sig_issuer_data').value   = padIssuer.toDataURL('image/png');
-    document.getElementById('sig_receiver_data').value = padReceiver.toDataURL('image/png');
-  });
+  const form = document.getElementById('signForm');
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      let hasNewSignature = false;
+
+      if (!issuerAlreadySigned && padIssuer && !padIssuer.isEmpty()) {
+        document.getElementById('sig_issuer_data').value = padIssuer.toDataURL('image/png');
+        hasNewSignature = true;
+      }
+      if (!receiverAlreadySigned && padReceiver && !padReceiver.isEmpty()) {
+        document.getElementById('sig_receiver_data').value = padReceiver.toDataURL('image/png');
+        hasNewSignature = true;
+      }
+
+      if (!hasNewSignature) {
+        e.preventDefault();
+        alert('Proszę złożyć co najmniej jeden podpis.');
+      }
+    });
+  }
 
   window.addEventListener('resize', function () {
-    const id = padIssuer.toData(), rd = padReceiver.toData();
-    resizeCanvas(issuerCanvas); resizeCanvas(receiverCanvas);
-    padIssuer.fromData(id);     padReceiver.fromData(rd);
+    if (padIssuer) {
+      const issuerCanvas = document.getElementById('sig_issuer');
+      if (issuerCanvas) {
+        const id = padIssuer.toData();
+        resizeCanvas(issuerCanvas);
+        padIssuer.fromData(id);
+      }
+    }
+    if (padReceiver) {
+      const receiverCanvas = document.getElementById('sig_receiver');
+      if (receiverCanvas) {
+        const rd = padReceiver.toData();
+        resizeCanvas(receiverCanvas);
+        padReceiver.fromData(rd);
+      }
+    }
   });
 });
 </script>
