@@ -1,6 +1,7 @@
 import os
 import secrets
 from pathlib import Path
+from urllib.parse import urlparse, parse_qs
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -75,19 +76,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'brueggen.wsgi.application'
 
-# PostgreSQL if DB_HOST is set (Azure App Service → Configuration → App settings),
-# otherwise fall back to local SQLite.
-_DB_HOST = os.environ.get('DB_HOST', '').strip()
-if _DB_HOST:
+# PostgreSQL if DATABASE_URL is set, e.g.
+# postgresql://user:password@host.postgres.database.azure.com/dbname?sslmode=require
+# (Azure App Service → Configuration → App settings), otherwise local SQLite.
+_DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
+if _DATABASE_URL:
+    _url = urlparse(_DATABASE_URL)
+    _sslmode = parse_qs(_url.query).get('sslmode', ['require'])[0]
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'HOST': _DB_HOST,
-            'PORT': os.environ.get('DB_PORT', '5432'),
-            'NAME': os.environ.get('DB_NAME', 'smartprotocols'),
-            'USER': os.environ.get('DB_USER', ''),
-            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-            'OPTIONS': {'sslmode': 'require'},
+            'HOST': _url.hostname,
+            'PORT': _url.port or 5432,
+            'NAME': _url.path.lstrip('/'),
+            'USER': _url.username,
+            'PASSWORD': _url.password,
+            'OPTIONS': {'sslmode': _sslmode},
         }
     }
 else:
