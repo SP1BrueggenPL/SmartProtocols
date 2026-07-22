@@ -75,12 +75,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'brueggen.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': _DATA_DIR / 'db.sqlite3',
+# PostgreSQL if DB_HOST is set (Azure App Service → Configuration → App settings),
+# otherwise fall back to local SQLite.
+_DB_HOST = os.environ.get('DB_HOST', '').strip()
+if _DB_HOST:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'HOST': _DB_HOST,
+            'PORT': os.environ.get('DB_PORT', '5432'),
+            'NAME': os.environ.get('DB_NAME', 'smartprotocols'),
+            'USER': os.environ.get('DB_USER', ''),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'OPTIONS': {'sslmode': 'require'},
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': _DATA_DIR / 'db.sqlite3',
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = []  # Relaxed for internal tool
 
