@@ -93,8 +93,12 @@
             <div><a href="mailto:{{ document.receiver_email }}">{{ document.receiver_email }}</a></div>
           </div>
           <div class="col-sm-6">
-            <label class="form-label text-muted small mb-0">Data wydania / zwrotu</label>
+            <label class="form-label text-muted small mb-0">Data podpisania</label>
+            {% if document.doc_date %}
             <div class="fw-semibold">{{ document.doc_date }}</div>
+            {% else %}
+            <div class="text-muted fst-italic small">Zostanie ustawiona po złożeniu obu podpisów</div>
+            {% endif %}
           </div>
           {% if document.network_name %}
           <div class="col-sm-6">

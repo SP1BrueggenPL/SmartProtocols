@@ -104,7 +104,7 @@
       <thead class="table-header">
         <tr>
           <th>Nr dokumentu</th><th>Typ</th><th>Operacja</th>
-          <th>Przekazujący</th><th>Przyjmujący</th><th>Data</th><th>Status</th>
+          <th>Przekazujący</th><th>Przyjmujący</th><th>Data podpisania</th><th>Status</th>
           <th class="text-end">Akcje</th>
         </tr>
       </thead>
@@ -128,7 +128,7 @@
           </td>
           <td>{{ doc.issuer_name }}</td>
           <td>{{ doc.receiver_name }}</td>
-          <td><span class="text-muted">{{ doc.doc_date }}</span></td>
+          <td><span class="text-muted">{{ doc.doc_date|default:"—" }}</span></td>
           <td>
             {% if doc.is_sent %}
               <span class="badge badge-sent">

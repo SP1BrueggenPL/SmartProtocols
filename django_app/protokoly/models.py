@@ -18,7 +18,7 @@ class Document(models.Model):
     doc_number     = models.CharField(max_length=30, unique=True, verbose_name='Nr dokumentu')
     doc_type       = models.CharField(max_length=10, choices=DOC_TYPE_CHOICES, verbose_name='Typ')
     operation      = models.CharField(max_length=10, choices=OPERATION_CHOICES, verbose_name='Operacja')
-    doc_date       = models.DateField(verbose_name='Data')
+    doc_date       = models.DateField(null=True, blank=True, verbose_name='Data')
     issuer_name    = models.CharField(max_length=200, verbose_name='Przekazujący')
     issuer_email   = models.EmailField(blank=True, default='', verbose_name='Email przekazującego')
     receiver_name  = models.CharField(max_length=200, verbose_name='Przyjmujący')
