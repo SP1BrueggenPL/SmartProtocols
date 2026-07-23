@@ -3,7 +3,6 @@ import os
 import secrets
 import string
 
-from datetime import date
 
 # Mapowanie: klucz DB → nazwa zmiennej środowiskowej (Azure App Service)
 _ENV_MAP = {
@@ -237,7 +236,6 @@ def document_create(request):
         doc_number         = _generate_doc_number(doc_type),
         doc_type           = doc_type,
         operation          = request.POST.get('operation', 'wydanie'),
-        doc_date           = request.POST.get('doc_date', str(date.today())),
         issuer_name        = request.POST.get('issuer_name', '').strip(),
         issuer_email       = request.POST.get('issuer_email', '').strip(),
         receiver_name      = request.POST.get('receiver_name', '').strip(),
@@ -277,7 +275,6 @@ def document_edit(request, pk):
         was_signed = doc.is_signed
 
         doc.operation          = request.POST.get('operation', 'wydanie')
-        doc.doc_date           = request.POST.get('doc_date', str(date.today()))
         doc.issuer_name        = request.POST.get('issuer_name', '').strip()
         doc.issuer_email       = request.POST.get('issuer_email', '').strip()
         doc.receiver_name      = request.POST.get('receiver_name', '').strip()
@@ -360,6 +357,7 @@ def document_sign(request, pk):
 
         if doc.sig_issuer and doc.sig_receiver and not doc.signed_at:
             doc.signed_at = timezone.now()
+            doc.doc_date  = timezone.localdate()
         doc.save()
 
         if doc.is_signed:

@@ -83,11 +83,6 @@
             </div>
           </div>
         </div>
-        <div class="col-md-4">
-          <label for="doc_date" class="form-label fw-semibold">Data <span class="text-danger">*</span></label>
-          <input type="date" name="doc_date" id="doc_date" class="form-control" required
-                 value="{% if document %}{{ document.doc_date|date:'Y-m-d' }}{% endif %}">
-        </div>
         <div class="col-md-4 field-network-name"
              {% if not document or document.doc_type != 'office' %}style="display:none"{% endif %}>
           <label for="network_name" class="form-label fw-semibold">Nazwa sieciowa</label>
