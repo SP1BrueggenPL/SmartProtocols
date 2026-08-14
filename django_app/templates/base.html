@@ -39,14 +39,14 @@
         <li class="nav-item">
           <a class="nav-link {% if 'audit' in request.resolver_match.url_name or 'inspection' in request.resolver_match.url_name %}active{% endif %}"
              href="{% url 'audit_list' %}">
-            <i class="bi bi-server me-1"></i>Serwerownia
+            <i class="bi bi-server me-1"></i>AuditManager
           </a>
         </li>
         {% else %}{% for grp in user.groups.all %}{% if grp.name == 'AuditManager' %}
         <li class="nav-item">
           <a class="nav-link {% if 'audit' in request.resolver_match.url_name or 'inspection' in request.resolver_match.url_name %}active{% endif %}"
              href="{% url 'audit_list' %}">
-            <i class="bi bi-server me-1"></i>Serwerownia
+            <i class="bi bi-server me-1"></i>AuditManager
           </a>
         </li>
         {% endif %}{% endfor %}{% endif %}
