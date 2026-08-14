@@ -5,6 +5,7 @@ import sys
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
+from django.db.models import Count, Q
 from django.forms import inlineformset_factory
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -281,10 +282,12 @@ def audit_list(request):
 
 @user_passes_test(_is_audit_manager, login_url='dashboard')
 def audit_detail(request, pk):
-    audit      = get_object_or_404(ServerAudit, pk=pk)
-    inspections = audit.inspections.select_related('user').all()
-    for insp in inspections:
-        insp.fail_count = insp.results.filter(is_met=False).count()
+    audit = get_object_or_404(ServerAudit, pk=pk)
+    inspections = (
+        audit.inspections
+        .select_related('user')
+        .annotate(fail_count=Count('results', filter=Q(results__is_met=False)))
+    )
     return render(request, 'serwerownia/audit_detail.html', {
         'audit': audit, 'inspections': inspections,
     })

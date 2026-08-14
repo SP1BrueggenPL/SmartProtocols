@@ -129,3 +129,19 @@ from django.contrib.messages import constants as msg_const
 MESSAGE_TAGS = {msg_const.ERROR: 'danger'}
 
 SESSION_COOKIE_AGE = 8 * 60 * 60  # 8 hours
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+        },
+    },
+}
