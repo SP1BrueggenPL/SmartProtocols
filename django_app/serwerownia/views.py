@@ -67,7 +67,7 @@ def _send_failure_email(inspection):
         f'Data:      {finished}\n\n'
         f'Niezgodne punkty:\n{failed_lines}\n\n'
         f'Proszę o weryfikację i podjęcie działań naprawczych.\n\n'
-        f'Z poważaniem,\nSystem SmartProtocols – Brueggen Polska Sp. z o.o.'
+        f'Z poważaniem,\nIT Tools Wilga – Brueggen Polska Sp. z o.o.'
     )
 
     return send_email(
