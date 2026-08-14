@@ -3,7 +3,7 @@ import sys
 
 from django import forms
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import user_passes_test
 from django.forms import inlineformset_factory
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -17,6 +17,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def _is_admin(user):
     return user.is_authenticated and user.is_staff
+
+
+def _is_audit_manager(user):
+    if not user.is_authenticated:
+        return False
+    if user.is_staff:
+        return True
+    return user.groups.filter(name='AuditManager').exists()
 
 
 def _effective_settings():
@@ -99,13 +107,13 @@ RequirementFormSet = inlineformset_factory(
 
 # ── Audit CRUD ────────────────────────────────────────────────────────────────
 
-@login_required
+@user_passes_test(_is_audit_manager, login_url='dashboard')
 def audit_list(request):
     audits = ServerAudit.objects.all()
     return render(request, 'serwerownia/audit_list.html', {'audits': audits})
 
 
-@login_required
+@user_passes_test(_is_audit_manager, login_url='dashboard')
 def audit_detail(request, pk):
     audit      = get_object_or_404(ServerAudit, pk=pk)
     inspections = audit.inspections.select_related('user').all()
@@ -178,7 +186,7 @@ def audit_delete(request, pk):
 
 # ── Inspection ────────────────────────────────────────────────────────────────
 
-@login_required
+@user_passes_test(_is_audit_manager, login_url='dashboard')
 def inspection_start(request, audit_pk):
     """Tworzy nową inspekcję NATYCHMIAST (timer startuje od tego momentu) i przekierowuje do formularza."""
     audit = get_object_or_404(ServerAudit, pk=audit_pk)
@@ -195,7 +203,7 @@ def inspection_start(request, audit_pk):
     return redirect('inspection_fill', audit_pk=audit_pk, pk=inspection.pk)
 
 
-@login_required
+@user_passes_test(_is_audit_manager, login_url='dashboard')
 def inspection_fill(request, audit_pk, pk):
     audit      = get_object_or_404(ServerAudit, pk=audit_pk)
     inspection = get_object_or_404(AuditInspection, pk=pk, audit=audit)
@@ -241,7 +249,7 @@ def inspection_fill(request, audit_pk, pk):
     })
 
 
-@login_required
+@user_passes_test(_is_audit_manager, login_url='dashboard')
 def inspection_detail(request, audit_pk, pk):
     audit      = get_object_or_404(ServerAudit, pk=audit_pk)
     inspection = get_object_or_404(AuditInspection, pk=pk, audit=audit)
@@ -251,7 +259,7 @@ def inspection_detail(request, audit_pk, pk):
     })
 
 
-@login_required
+@user_passes_test(_is_audit_manager, login_url='dashboard')
 def inspection_finish(request, audit_pk, pk):
     if request.method != 'POST':
         return redirect('inspection_detail', audit_pk=audit_pk, pk=pk)
@@ -284,7 +292,7 @@ def inspection_finish(request, audit_pk, pk):
     return redirect('inspection_detail', audit_pk=audit_pk, pk=pk)
 
 
-@login_required
+@user_passes_test(_is_admin, login_url='dashboard')
 def inspection_delete(request, audit_pk, pk):
     audit      = get_object_or_404(ServerAudit, pk=audit_pk)
     inspection = get_object_or_404(AuditInspection, pk=pk, audit=audit)
