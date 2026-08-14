@@ -65,7 +65,7 @@
       <tbody>
         {% for insp in inspections %}
         <tr style="cursor:pointer" onclick="window.location='{% url 'inspection_detail' audit.pk insp.pk %}'">
-          <td>{{ insp.user.get_full_name|default:insp.user.username|default:"—" }}</td>
+          <td>{% if insp.user %}{{ insp.user.get_full_name|default:insp.user.username }}{% else %}—{% endif %}</td>
           <td class="text-muted small">{{ insp.created_at|date:"Y-m-d H:i" }}</td>
           <td class="text-muted small">
             {% if insp.completed_at %}{{ insp.completed_at|date:"Y-m-d H:i" }}{% else %}—{% endif %}
