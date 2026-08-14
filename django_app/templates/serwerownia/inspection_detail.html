@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Inspekcja – {{ audit.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{% url 'audit_detail' audit.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+  <div>
+    <h4 class="mb-0 fw-bold"><i class="bi bi-clipboard-check me-2 text-success"></i>Szczegóły inspekcji</h4>
+    <small class="text-muted">{{ audit.name }} · {{ inspection.user.get_full_name|default:inspection.user.username|default:"—" }}</small>
+  </div>
+</div>
+
+{# Status / timer #}
+<div class="row g-3 mb-4">
+  <div class="col-md-auto">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body py-3 px-4 d-flex flex-column align-items-center justify-content-center gap-1">
+        <div class="text-muted small">Status</div>
+        {% if not inspection.is_completed %}
+          <span class="badge bg-warning-subtle text-warning border border-warning-subtle fs-6 px-3 py-2">W trakcie</span>
+        {% elif inspection.has_failures %}
+          <span class="badge bg-danger-subtle text-danger border border-danger-subtle fs-6 px-3 py-2">Niezgodności</span>
+        {% else %}
+          <span class="badge bg-success-subtle text-success border border-success-subtle fs-6 px-3 py-2">OK</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-auto">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body py-3 px-4 d-flex flex-column align-items-center justify-content-center gap-1">
+        <div class="text-muted small">Start</div>
+        <div class="fw-semibold">{{ inspection.created_at|date:"Y-m-d H:i" }}</div>
+      </div>
+    </div>
+  </div>
+  {% if inspection.is_completed %}
+  <div class="col-md-auto">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body py-3 px-4 d-flex flex-column align-items-center justify-content-center gap-1">
+        <div class="text-muted small">Zakończenie</div>
+        <div class="fw-semibold">{{ inspection.completed_at|date:"Y-m-d H:i" }}</div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-md-auto">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body py-3 px-4 d-flex flex-column align-items-center justify-content-center gap-1">
+        <div class="text-muted small"><i class="bi bi-stopwatch me-1"></i>Odliczanie</div>
+        <div class="fw-semibold font-monospace fs-5" id="timerDisplay">—</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  <div class="col-md-auto">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body py-3 px-4 d-flex flex-column align-items-center justify-content-center gap-1">
+        <div class="text-muted small">Inspektor</div>
+        <div class="fw-semibold">{{ inspection.user.get_full_name|default:inspection.user.username|default:"—" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Wyniki #}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white fw-semibold py-3">
+    <i class="bi bi-list-check me-2 text-primary"></i>Wyniki kontroli
+  </div>
+  <div class="table-responsive">
+    <table class="table table-bordered align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th style="width:4%">#</th>
+          <th>Punkt kontrolny</th>
+          <th style="width:12%" class="text-center">Status</th>
+          <th style="width:30%">Komentarz</th>
+          <th style="width:8%">Zdjęcie</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for result in results %}
+        {% with req=result.requirement %}
+        <tr class="{% if not result.is_met %}table-danger-subtle{% endif %}">
+          <td class="text-center text-muted">{{ forloop.counter }}</td>
+          <td class="fw-semibold small">
+            {{ req.text|default:"—" }}
+            {% if req.image %}
+            <div class="mt-1"><img src="{{ req.image.url }}" height="36" class="rounded border" title="Przykład"></div>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if result.is_met %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">OK</span>
+            {% else %}
+              <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">NOK</span>
+            {% endif %}
+          </td>
+          <td class="small">{{ result.comment|default:"—" }}</td>
+          <td>
+            {% if result.image %}
+            <img src="{{ result.image.url }}" height="40" class="rounded border">
+            {% else %}
+            <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if inspection.comment %}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <div class="fw-semibold mb-1"><i class="bi bi-chat-text me-2 text-primary"></i>Komentarz ogólny</div>
+    <p class="mb-0 text-muted">{{ inspection.comment }}</p>
+  </div>
+</div>
+{% endif %}
+
+<div class="d-flex gap-2 justify-content-end">
+  {% if not inspection.is_completed %}
+  <a href="{% url 'inspection_fill' audit.pk inspection.pk %}" class="btn btn-outline-warning">
+    <i class="bi bi-pencil-square me-1"></i>Edytuj wyniki</a>
+  <form method="post" action="{% url 'inspection_finish' audit.pk inspection.pk %}" class="m-0">
+    {% csrf_token %}
+    <button type="submit" id="finishBtn" class="btn btn-success btn-lg px-4" disabled>
+      <i class="bi bi-check-circle me-2"></i>Zakończ inspekcję
+    </button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if not inspection.is_completed %}
+<script>
+(function() {
+  var startTime = new Date('{{ inspection.created_at|date:"c" }}');
+  var TIMER_SECONDS = 180;
+  var display = document.getElementById('timerDisplay');
+  var btn = document.getElementById('finishBtn');
+
+  function updateTimer() {
+    var elapsed = (Date.now() - startTime.getTime()) / 1000;
+    var remaining = Math.max(0, TIMER_SECONDS - elapsed);
+    if (remaining <= 0) {
+      display.textContent = 'Gotowe';
+      display.classList.add('text-success');
+      btn.disabled = false;
+    } else {
+      var mins = Math.floor(remaining / 60);
+      var secs = Math.floor(remaining % 60);
+      display.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+      setTimeout(updateTimer, 500);
+    }
+  }
+  updateTimer();
+})();
+</script>
+{% endif %}
+{% endblock %}

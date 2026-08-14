@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}{{ audit.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div class="d-flex align-items-center gap-3">
+    <a href="{% url 'audit_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="bi bi-server me-2 text-primary"></i>{{ audit.name }}</h4>
+      {% if audit.description %}<small class="text-muted">{{ audit.description }}</small>{% endif %}
+    </div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    {% if request.user.is_staff %}
+    <a href="{% url 'audit_edit' audit.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-pencil me-1"></i>Edytuj audyt</a>
+    {% endif %}
+    <a href="{% url 'inspection_start' audit.pk %}" class="btn btn-success">
+      <i class="bi bi-play-circle me-1"></i>Nowa inspekcja</a>
+  </div>
+</div>
+
+{# Punkty kontrolne #}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white fw-semibold py-3">
+    <i class="bi bi-list-check me-2 text-primary"></i>Punkty kontrolne ({{ audit.requirements.count }})
+  </div>
+  <div class="card-body p-0">
+    {% if audit.requirements.all %}
+    <ul class="list-group list-group-flush">
+      {% for req in audit.requirements.all %}
+      <li class="list-group-item d-flex align-items-center gap-3">
+        <span class="badge bg-secondary-subtle text-secondary border">{{ forloop.counter }}</span>
+        <span class="flex-grow-1">{{ req.text }}</span>
+        {% if req.image %}
+        <img src="{{ req.image.url }}" height="32" class="rounded border" title="Przykład">
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted text-center py-3 mb-0">Brak punktów kontrolnych.</p>
+    {% endif %}
+  </div>
+</div>
+
+{# Inspekcje #}
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white fw-semibold py-3">
+    <i class="bi bi-clipboard-check me-2 text-primary"></i>Historia inspekcji ({{ inspections|length }})
+  </div>
+  {% if inspections %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Inspektor</th>
+          <th>Start</th>
+          <th>Zakończenie</th>
+          <th class="text-center">Wynik</th>
+          <th class="text-center">Niezgodności</th>
+          <th class="text-end">Akcje</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for insp in inspections %}
+        <tr style="cursor:pointer" onclick="window.location='{% url 'inspection_detail' audit.pk insp.pk %}'">
+          <td>{{ insp.user.get_full_name|default:insp.user.username|default:"—" }}</td>
+          <td class="text-muted small">{{ insp.created_at|date:"Y-m-d H:i" }}</td>
+          <td class="text-muted small">
+            {% if insp.completed_at %}{{ insp.completed_at|date:"Y-m-d H:i" }}{% else %}—{% endif %}
+          </td>
+          <td class="text-center">
+            {% if not insp.is_completed %}
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle">W trakcie</span>
+            {% elif insp.fail_count == 0 %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle">OK</span>
+            {% else %}
+              <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Niezgodności</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if insp.fail_count > 0 %}
+              <span class="badge bg-danger text-white">{{ insp.fail_count }}</span>
+            {% elif insp.is_completed %}
+              <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="text-end" onclick="event.stopPropagation()">
+            <div class="d-flex gap-1 justify-content-end">
+              <a href="{% url 'inspection_detail' audit.pk insp.pk %}" class="btn btn-sm btn-outline-primary" title="Szczegóły">
+                <i class="bi bi-eye"></i></a>
+              {% if not insp.is_completed %}
+              <a href="{% url 'inspection_fill' audit.pk insp.pk %}" class="btn btn-sm btn-outline-warning" title="Wypełnij">
+                <i class="bi bi-pencil-square"></i></a>
+              {% endif %}
+              {% if request.user.is_staff %}
+              <a href="{% url 'inspection_delete' audit.pk insp.pk %}" class="btn btn-sm btn-outline-danger" title="Usuń">
+                <i class="bi bi-trash"></i></a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-4 text-muted">
+    <i class="bi bi-clipboard display-4 d-block mb-2 opacity-25"></i>
+    <p class="mb-0">Brak inspekcji. Kliknij „Nowa inspekcja" żeby rozpocząć.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'edit' %}Edytuj audyt{% else %}Nowy audyt{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{% if mode == 'edit' %}{% url 'audit_detail' audit.pk %}{% else %}{% url 'audit_list' %}{% endif %}"
+     class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="mb-0 fw-bold">
+    <i class="bi bi-server me-2 text-primary"></i>
+    {% if mode == 'edit' %}Edytuj audyt{% else %}Nowy audyt serwerowni{% endif %}
+  </h4>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  {# Dane audytu #}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white fw-semibold py-3">
+      <i class="bi bi-info-circle me-2 text-primary"></i>Dane audytu
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label fw-semibold">Nazwa audytu <span class="text-danger">*</span></label>
+          {{ form.name }}
+          {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Opis</label>
+          {{ form.description }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Punkty kontrolne #}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white fw-semibold py-3">
+      <i class="bi bi-list-check me-2 text-primary"></i>Punkty kontrolne
+      <small class="text-muted fw-normal ms-2">Zaznacz "Usuń" przy punkcie żeby go usunąć</small>
+    </div>
+    <div class="card-body p-0">
+      {{ formset.management_form }}
+      <div class="table-responsive">
+        <table class="table table-bordered mb-0" id="reqTable">
+          <thead class="table-light">
+            <tr>
+              <th style="width:50%">Punkt kontrolny <span class="text-danger">*</span></th>
+              <th style="width:35%">Zdjęcie przykładowe</th>
+              <th class="text-center" style="width:15%">Usuń</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req_form in formset %}
+            <tr>
+              <td>
+                {{ req_form.id }}
+                {{ req_form.text }}
+                {% if req_form.text.errors %}<div class="text-danger small">{{ req_form.text.errors }}</div>{% endif %}
+              </td>
+              <td>
+                {% if req_form.instance.image %}
+                <div class="mb-1"><img src="{{ req_form.instance.image.url }}" height="40" class="rounded border"></div>
+                {% endif %}
+                {{ req_form.image }}
+              </td>
+              <td class="text-center align-middle">
+                {% if req_form.can_delete %}
+                  <div class="form-check d-flex justify-content-center">
+                    {{ req_form.DELETE }}
+                  </div>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 justify-content-end">
+    <a href="{% if mode == 'edit' %}{% url 'audit_detail' audit.pk %}{% else %}{% url 'audit_list' %}{% endif %}"
+       class="btn btn-outline-secondary"><i class="bi bi-x-circle me-1"></i>Anuluj</a>
+    <button type="submit" class="btn btn-primary px-4">
+      <i class="bi bi-check-circle me-2"></i>{% if mode == 'edit' %}Zapisz zmiany{% else %}Utwórz audyt{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}
