@@ -49,6 +49,41 @@
 
       <div class="vr d-none d-md-block mx-2" style="opacity:.15"></div>
 
+      {# Adres helpdesk #}
+      <div class="col-md-5">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="email_settings">
+          <label class="form-label fw-semibold">
+            Adres helpdesk (serwerownia)
+            {% if env_overrides.helpdesk_email %}
+            <span class="badge bg-info-subtle text-info border border-info-subtle fw-normal ms-1">
+              <i class="bi bi-cpu me-1"></i>HELPDESK_EMAIL
+            </span>
+            {% endif %}
+          </label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-headset"></i></span>
+            {% if env_overrides.helpdesk_email %}
+            <input type="email" class="form-control bg-light" readonly
+                   value="{{ settings.helpdesk_email }}">
+            {% else %}
+            <input type="email" name="helpdesk_email" class="form-control"
+                   placeholder="helpdesk@brueggen.pl"
+                   value="{{ settings.helpdesk_email }}">
+            {% endif %}
+          </div>
+          <div class="form-text">Raporty niezgodności z audytów serwerowni trafią na ten adres.</div>
+          {% if not env_overrides.helpdesk_email %}
+          <button type="submit" class="btn btn-primary btn-sm mt-2">
+            <i class="bi bi-save me-1"></i>Zapisz
+          </button>
+          {% endif %}
+        </form>
+      </div>
+
+      <div class="w-100"></div>
+
       {# Test email #}
       <div class="col-md-5">
         <form method="post">

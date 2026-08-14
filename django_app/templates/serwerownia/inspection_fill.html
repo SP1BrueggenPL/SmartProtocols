@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Inspekcja – {{ audit.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{% url 'audit_detail' audit.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+  <div>
+    <h4 class="mb-0 fw-bold"><i class="bi bi-clipboard-check me-2 text-success"></i>Wypełnij inspekcję</h4>
+    <small class="text-muted">{{ audit.name }} · Start: {{ inspection.created_at|date:"Y-m-d H:i" }}</small>
+  </div>
+</div>
+
+<div class="alert alert-info mb-4">
+  <i class="bi bi-stopwatch me-2"></i>
+  Timer 3-minutowy startuje od momentu wejścia w inspekcję. Przycisk „Zakończ" będzie aktywny po upływie 3 minut.
+</div>
+
+<form method="post" enctype="multipart/form-data" id="fillForm">
+  {% csrf_token %}
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white fw-semibold py-3">
+      <i class="bi bi-list-check me-2 text-primary"></i>Punkty kontrolne
+    </div>
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:4%">#</th>
+            <th style="width:35%">Punkt kontrolny</th>
+            {% for r in results %}{% if r.requirement.image %}<th style="width:10%">Przykład</th>{% endif %}{% empty %}{% endfor %}
+            <th style="width:15%" class="text-center">Status</th>
+            <th style="width:28%">Komentarz <small class="text-danger">(wymagany gdy NOK)</small></th>
+            <th style="width:8%">Zdjęcie</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for result in results %}
+          {% with req=result.requirement %}
+          <tr id="row_{{ result.pk }}">
+            <td class="text-center text-muted">{{ forloop.counter }}</td>
+            <td class="fw-semibold small">{{ req.text|default:"—" }}</td>
+            {% if req.image %}
+            <td><img src="{{ req.image.url }}" height="40" class="rounded border"></td>
+            {% endif %}
+            <td class="text-center">
+              <div class="d-flex gap-2 justify-content-center">
+                <div class="form-check form-check-inline m-0">
+                  <input class="form-check-input status-radio" type="radio"
+                         name="is_met_{{ result.pk }}" id="ok_{{ result.pk }}"
+                         value="true"
+                         {% if post %}{% if post|default:'' %}{% if result.pk|stringformat:"s" in post %}{% endif %}{% endif %}{% endif %}
+                         onchange="onStatusChange({{ result.pk }})">
+                  <label class="form-check-label badge bg-success-subtle text-success border border-success-subtle px-2 py-1" for="ok_{{ result.pk }}">OK</label>
+                </div>
+                <div class="form-check form-check-inline m-0">
+                  <input class="form-check-input status-radio" type="radio"
+                         name="is_met_{{ result.pk }}" id="nok_{{ result.pk }}"
+                         value="false" checked
+                         onchange="onStatusChange({{ result.pk }})">
+                  <label class="form-check-label badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" for="nok_{{ result.pk }}">NOK</label>
+                </div>
+              </div>
+            </td>
+            <td>
+              <textarea class="form-control form-control-sm comment-field"
+                        name="comment_{{ result.pk }}"
+                        id="comment_{{ result.pk }}"
+                        rows="2"
+                        placeholder="Komentarz…"
+                        data-result="{{ result.pk }}">{{ post|default:'' }}</textarea>
+            </td>
+            <td>
+              {% if result.image %}
+              <div class="mb-1"><img src="{{ result.image.url }}" height="32" class="rounded border"></div>
+              {% endif %}
+              <input type="file" name="image_{{ result.pk }}" class="form-control form-control-sm" accept="image/*">
+            </td>
+          </tr>
+          {% endwith %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <label class="form-label fw-semibold">Komentarz ogólny</label>
+      <textarea name="general_comment" class="form-control" rows="2" placeholder="Opcjonalne uwagi ogólne…"></textarea>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 justify-content-end">
+    <a href="{% url 'audit_detail' audit.pk %}" class="btn btn-outline-secondary">
+      <i class="bi bi-x-circle me-1"></i>Anuluj</a>
+    <button type="submit" class="btn btn-primary btn-lg px-4">
+      <i class="bi bi-save me-2"></i>Zapisz wyniki
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function onStatusChange(resultId) {
+  const nok = document.getElementById('nok_' + resultId).checked;
+  const comment = document.getElementById('comment_' + resultId);
+  comment.required = nok;
+  comment.classList.toggle('border-danger', nok);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize: all NOK selected by default → comments required
+  {% for result in results %}
+  onStatusChange({{ result.pk }});
+  {% endfor %}
+});
+</script>
+{% endblock %}

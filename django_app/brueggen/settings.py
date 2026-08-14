@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'protokoly',
+    'serwerownia',
 ]
 
 MIDDLEWARE = [
@@ -108,6 +109,9 @@ LANGUAGE_CODE = 'pl'
 TIME_ZONE = 'Europe/Warsaw'
 USE_I18N = True
 USE_TZ = True
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = _DATA_DIR / 'media'
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']

@@ -7,6 +7,7 @@ import string
 # Mapowanie: klucz DB → nazwa zmiennej środowiskowej (Azure App Service)
 _ENV_MAP = {
     'accounting_email':        'ACCOUNTING_EMAIL',
+    'helpdesk_email':          'HELPDESK_EMAIL',
     'azure_connection_string': 'AZURE_CONNECTION_STRING',
     'azure_sender_address':    'AZURE_SENDER_ADDRESS',
     'azure_from_name':         'AZURE_FROM_NAME',
@@ -505,7 +506,7 @@ def settings_view(request):
         action = request.POST.get('action')
 
         if action == 'email_settings':
-            for key in ['accounting_email', 'azure_connection_string',
+            for key in ['accounting_email', 'helpdesk_email', 'azure_connection_string',
                         'azure_sender_address', 'azure_from_name']:
                 AppSetting.set(key, request.POST.get(key, ''))
             messages.success(request, 'Ustawienia zostały zapisane.')

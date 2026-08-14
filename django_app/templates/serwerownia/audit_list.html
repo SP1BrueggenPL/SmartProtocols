@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Audyty serwerowni{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <h4 class="mb-0 fw-bold"><i class="bi bi-server me-2 text-primary"></i>Audyty serwerowni</h4>
+  {% if request.user.is_staff %}
+  <a href="{% url 'audit_new' %}" class="btn btn-primary">
+    <i class="bi bi-plus-circle me-2"></i>Nowy audyt
+  </a>
+  {% endif %}
+</div>
+
+{% if audits %}
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Nazwa audytu</th>
+          <th>Opis</th>
+          <th class="text-center">Punkty</th>
+          <th class="text-center">Inspekcje</th>
+          <th class="text-end">Akcje</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for audit in audits %}
+        <tr style="cursor:pointer" onclick="window.location='{% url 'audit_detail' audit.pk %}'">
+          <td class="fw-semibold text-primary">{{ audit.name }}</td>
+          <td class="text-muted small">{{ audit.description|truncatechars:60|default:"—" }}</td>
+          <td class="text-center">
+            <span class="badge bg-secondary-subtle text-secondary border">{{ audit.requirements.count }}</span>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-info-subtle text-info border">{{ audit.inspections.count }}</span>
+          </td>
+          <td class="text-end" onclick="event.stopPropagation()">
+            <div class="d-flex gap-1 justify-content-end">
+              <a href="{% url 'audit_detail' audit.pk %}" class="btn btn-sm btn-outline-primary" title="Szczegóły">
+                <i class="bi bi-eye"></i></a>
+              {% if request.user.is_staff %}
+              <a href="{% url 'audit_edit' audit.pk %}" class="btn btn-sm btn-outline-secondary" title="Edytuj">
+                <i class="bi bi-pencil"></i></a>
+              <a href="{% url 'audit_delete' audit.pk %}" class="btn btn-sm btn-outline-danger" title="Usuń">
+                <i class="bi bi-trash"></i></a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-server display-3 d-block mb-3 opacity-25"></i>
+  <h5>Brak audytów</h5>
+  <p class="mb-4">Nie ma jeszcze żadnych audytów serwerowni.</p>
+  {% if request.user.is_staff %}
+  <a href="{% url 'audit_new' %}" class="btn btn-primary">
+    <i class="bi bi-plus-circle me-2"></i>Utwórz pierwszy audyt</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Usuń audyt{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{% url 'audit_detail' audit.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="mb-0 fw-bold text-danger"><i class="bi bi-trash me-2"></i>Usuń audyt</h4>
+</div>
+
+<div class="card border-danger shadow-sm" style="max-width:500px">
+  <div class="card-body">
+    <p class="mb-1">Czy na pewno chcesz usunąć audyt:</p>
+    <p class="fw-bold fs-5 mb-3">{{ audit.name }}</p>
+    <p class="text-danger small mb-3">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      Zostaną usunięte również wszystkie powiązane inspekcje i ich wyniki. Tej operacji nie można cofnąć.
+    </p>
+    <div class="d-flex gap-2">
+      <a href="{% url 'audit_detail' audit.pk %}" class="btn btn-outline-secondary">Anuluj</a>
+      <form method="post" class="m-0">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">
+          <i class="bi bi-trash me-1"></i>Usuń audyt
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
