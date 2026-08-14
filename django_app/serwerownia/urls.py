@@ -12,4 +12,5 @@ urlpatterns = [
     path('<int:audit_pk>/inspekcja/<int:pk>/wypelnij/',     views.inspection_fill,   name='inspection_fill'),
     path('<int:audit_pk>/inspekcja/<int:pk>/zakoncz/',      views.inspection_finish, name='inspection_finish'),
     path('<int:audit_pk>/inspekcja/<int:pk>/usun/',         views.inspection_delete, name='inspection_delete'),
+    path('<int:audit_pk>/inspekcja/<int:pk>/pdf/',          views.inspection_pdf,    name='inspection_pdf'),
 ]

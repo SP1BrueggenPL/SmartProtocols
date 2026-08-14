@@ -36,9 +36,13 @@
 
   {# Punkty kontrolne #}
   <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white fw-semibold py-3">
-      <i class="bi bi-list-check me-2 text-primary"></i>Punkty kontrolne
-      <small class="text-muted fw-normal ms-2">Zaznacz "Usuń" przy punkcie żeby go usunąć</small>
+    <div class="card-header bg-white fw-semibold py-3 d-flex align-items-center justify-content-between">
+      <div>
+        <i class="bi bi-list-check me-2 text-primary"></i>Punkty kontrolne
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRequirementRow()">
+        <i class="bi bi-plus-circle me-1"></i>Dodaj punkt
+      </button>
     </div>
     <div class="card-body p-0">
       {{ formset.management_form }}
@@ -48,12 +52,12 @@
             <tr>
               <th style="width:50%">Punkt kontrolny <span class="text-danger">*</span></th>
               <th style="width:35%">Zdjęcie przykładowe</th>
-              <th class="text-center" style="width:15%">Usuń</th>
+              <th class="text-center" style="width:15%">Akcja</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="reqTableBody">
             {% for req_form in formset %}
-            <tr>
+            <tr class="req-row">
               <td>
                 {{ req_form.id }}
                 {{ req_form.text }}
@@ -67,13 +71,29 @@
               </td>
               <td class="text-center align-middle">
                 {% if req_form.can_delete %}
-                  <div class="form-check d-flex justify-content-center">
-                    {{ req_form.DELETE }}
-                  </div>
+                  <div style="display:none">{{ req_form.DELETE }}</div>
+                  <button type="button" class="btn btn-sm btn-outline-danger delete-row-btn"
+                          data-delete-id="{{ req_form.DELETE.id_for_label }}">
+                    <i class="bi bi-trash me-1"></i>Usuń
+                  </button>
                 {% endif %}
               </td>
             </tr>
             {% endfor %}
+            {# Hidden empty-form template for JS cloning #}
+            <tr id="empty-form-row" style="display:none" class="req-row">
+              <td>
+                {{ formset.empty_form.id }}
+                {{ formset.empty_form.text }}
+              </td>
+              <td>{{ formset.empty_form.image }}</td>
+              <td class="text-center align-middle">
+                <div style="display:none">{{ formset.empty_form.DELETE }}</div>
+                <button type="button" class="btn btn-sm btn-outline-danger delete-row-btn">
+                  <i class="bi bi-trash me-1"></i>Usuń
+                </button>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -88,4 +108,54 @@
     </button>
   </div>
 </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function addRequirementRow() {
+  const tbody = document.getElementById('reqTableBody');
+  const totalForms = document.querySelector('[name$="TOTAL_FORMS"]');
+  const formNum = parseInt(totalForms.value);
+  const template = document.getElementById('empty-form-row');
+  const clone = template.cloneNode(true);
+  clone.id = '';
+  clone.style.display = '';
+  clone.innerHTML = clone.innerHTML.replace(/__prefix__/g, formNum);
+  tbody.insertBefore(clone, template);
+  totalForms.value = formNum + 1;
+}
+
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.delete-row-btn');
+  if (!btn) return;
+
+  const row = btn.closest('tr');
+  const deleteId = btn.dataset.deleteId;
+  const deleteCheck = deleteId
+    ? document.getElementById(deleteId)
+    : row.querySelector('input[type=checkbox]');
+
+  if (!deleteCheck) {
+    // Completely new row with no db instance – just remove
+    row.remove();
+    const totalForms = document.querySelector('[name$="TOTAL_FORMS"]');
+    totalForms.value = Math.max(0, parseInt(totalForms.value) - 1);
+    return;
+  }
+
+  if (deleteCheck.checked) {
+    deleteCheck.checked = false;
+    row.classList.remove('table-danger', 'opacity-50');
+    btn.innerHTML = '<i class="bi bi-trash me-1"></i>Usuń';
+    btn.classList.remove('btn-danger');
+    btn.classList.add('btn-outline-danger');
+  } else {
+    deleteCheck.checked = true;
+    row.classList.add('table-danger', 'opacity-50');
+    btn.innerHTML = '<i class="bi bi-arrow-counterclockwise me-1"></i>Cofnij';
+    btn.classList.remove('btn-outline-danger');
+    btn.classList.add('btn-danger');
+  }
+});
+</script>
 {% endblock %}
