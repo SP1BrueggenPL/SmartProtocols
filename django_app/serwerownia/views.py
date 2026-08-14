@@ -46,64 +46,161 @@ def _effective_settings():
 
 
 def _generate_inspection_pdf(inspection):
+    # Reuse brand fonts, colors and helpers from pdf_gen (do NOT modify pdf_gen.py)
+    from pdf_gen import (
+        _reg_fonts, BRAND, DARK, BORDER, CW, MARGIN,
+        _S, _th, _td, _table_style_base, _sec_hdr, LOGO_PATH,
+    )
     from reportlab.lib.pagesizes import A4
-    from reportlab.lib import colors
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import cm
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-    from reportlab.lib.enums import TA_CENTER
+    from reportlab.lib.colors import HexColor, white, black
+    from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Table, TableStyle,
+        Spacer, Image as RLImage, HRFlowable,
+    )
+    from reportlab.lib.utils import ImageReader
+
+    _reg_fonts()
 
     results = list(inspection.results.select_related('requirement').all())
     audit   = inspection.audit
 
     buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=A4,
-                            rightMargin=2*cm, leftMargin=2*cm,
-                            topMargin=2*cm, bottomMargin=2*cm)
-    styles     = getSampleStyleSheet()
-    cell_style = ParagraphStyle('Cell', parent=styles['Normal'], fontSize=8, leading=10)
-    meta_style = ParagraphStyle('Meta', parent=styles['Normal'], fontSize=10, spaceAfter=2)
-    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=14,
-                                  alignment=TA_CENTER, spaceAfter=6)
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        leftMargin=MARGIN, rightMargin=MARGIN,
+        topMargin=MARGIN,  bottomMargin=MARGIN,
+    )
 
     inspector = inspection.user.get_full_name() if inspection.user else '—'
     started   = inspection.created_at.strftime('%Y-%m-%d %H:%M') if inspection.created_at else '—'
     finished  = inspection.completed_at.strftime('%Y-%m-%d %H:%M') if inspection.completed_at else 'W trakcie'
 
-    story = [
-        Paragraph('Raport inspekcji serwerowni', title_style),
-        Paragraph(f'<b>Audyt:</b> {audit.name}', meta_style),
-        Paragraph(f'<b>Inspektor:</b> {inspector}', meta_style),
-        Paragraph(f'<b>Start:</b> {started}', meta_style),
-        Paragraph(f'<b>Zakończenie:</b> {finished}', meta_style),
-        Spacer(1, 0.5 * cm),
-    ]
+    story = []
 
-    style_cmds = [
-        ('BACKGROUND',    (0, 0), (-1,  0), colors.HexColor('#2c5282')),
-        ('TEXTCOLOR',     (0, 0), (-1,  0), colors.white),
-        ('FONTNAME',      (0, 0), (-1,  0), 'Helvetica-Bold'),
-        ('FONTSIZE',      (0, 0), (-1, -1), 8),
-        ('ALIGN',         (2, 0), (2,  -1), 'CENTER'),
+    # ── Logo + nagłówek firmy ───────────────────────────────────────────
+    LOGO_H = 33
+    logo_cell = None
+    if os.path.exists(LOGO_PATH):
+        try:
+            iw, ih = ImageReader(LOGO_PATH).getSize()
+            logo_cell = RLImage(LOGO_PATH, width=iw * LOGO_H / ih, height=LOGO_H)
+        except Exception:
+            pass
+    if logo_cell is None:
+        logo_cell = Paragraph(
+            "<font name='Arial-Bold' size='18' color='#9b1c2e'>Brüggen</font>",
+            _S('hl', alignment=TA_RIGHT),
+        )
+
+    hdr_row = Table(
+        [[
+            Paragraph("Brueggen Polska Sp. z o.o. | Celejów 59, 08-470 Wilga",
+                       _S('hdr_l', fontSize=7.5, textColor=black)),
+            logo_cell,
+        ]],
+        colWidths=[CW * 0.65, CW * 0.35],
+    )
+    hdr_row.setStyle(TableStyle([
         ('VALIGN',        (0, 0), (-1, -1), 'TOP'),
-        ('GRID',          (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ALIGN',         (1, 0), (1,  0),  'RIGHT'),
+        ('LEFTPADDING',   (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING',  (0, 0), (-1, -1), 0),
+        ('TOPPADDING',    (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+    ]))
+    story.append(hdr_row)
+
+    # ── Tytuł ──────────────────────────────────────────────────────────
+    story.append(Paragraph(
+        'Raport z inspekcji AuditManager',
+        _S('h1', fontName='Arial-Bold', fontSize=17, leading=21,
+           textColor=BRAND, spaceBefore=2),
+    ))
+    story.append(HRFlowable(width=CW, thickness=2, color=BRAND, spaceAfter=8))
+
+    # ── Informacje o inspekcji ──────────────────────────────────────────
+    story.append(_sec_hdr('Informacje o inspekcji'))
+
+    lbl_st = _S('ml', fontName='Arial-Bold', fontSize=9, textColor=white, leading=11)
+    val_st = _S('mv', fontSize=9, leading=11)
+
+    meta_data = [
+        ('Audyt',       audit.name),
+        ('Inspektor',   inspector),
+        ('Start',       started),
+        ('Zakończenie', finished),
+    ]
+    if inspection.comment:
+        meta_data.append(('Komentarz ogólny', inspection.comment))
+
+    meta_rows = [[Paragraph(lbl, lbl_st), Paragraph(val, val_st)] for lbl, val in meta_data]
+    meta_table = Table(meta_rows, colWidths=[CW * 0.28, CW * 0.72])
+    meta_table.setStyle(TableStyle([
+        ('FONTSIZE',      (0, 0), (-1, -1), 9),
+        ('GRID',          (0, 0), (-1, -1), 0.5, BORDER),
+        ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
         ('TOPPADDING',    (0, 0), (-1, -1), 4),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-    ]
+        ('LEFTPADDING',   (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING',  (0, 0), (-1, -1), 6),
+        ('BACKGROUND',    (0, 0), (0, -1), DARK),
+        ('BACKGROUND',    (1, 0), (1, -1), white),
+    ]))
+    story.append(meta_table)
+    story.append(Spacer(1, 8))
 
-    data = [['#', 'Punkt kontrolny', 'Status', 'Komentarz']]
+    # ── Wyniki kontroli ─────────────────────────────────────────────────
+    story.append(_sec_hdr('Wyniki kontroli'))
+
+    IMG_W = 3.0 * cm
+    IMG_H = 2.2 * cm
+
+    has_images = any(
+        r.image and hasattr(r.image, 'path') and os.path.exists(r.image.path)
+        for r in results
+    )
+
+    if has_images:
+        col_w      = [0.8*cm, 6.0*cm, 2.0*cm, 5.5*cm, 3.9*cm]
+        header_row = [_th('#'), _th('Punkt kontrolny'), _th('Status'), _th('Komentarz'), _th('Zdjęcie')]
+    else:
+        col_w      = [0.8*cm, 7.0*cm, 2.0*cm, 8.4*cm]
+        header_row = [_th('#'), _th('Punkt kontrolny'), _th('Status'), _th('Komentarz')]
+
+    data_rows  = [header_row]
+    style_cmds = _table_style_base()
+    style_cmds += [('ALIGN', (2, 0), (2, -1), 'CENTER')]
+
     for i, result in enumerate(results, 1):
         req_text = result.requirement.text if result.requirement else '—'
         status   = 'OK' if result.is_met else 'NOK'
         comment  = result.comment or '—'
-        data.append([str(i), Paragraph(req_text, cell_style), status, Paragraph(comment, cell_style)])
-        if not result.is_met:
-            style_cmds.append(('BACKGROUND', (0, i), (-1, i), colors.Color(1, 0.88, 0.88)))
 
-    col_w = [1*cm, 7.5*cm, 2*cm, 6.5*cm]
-    table = Table(data, colWidths=col_w, repeatRows=1)
-    table.setStyle(TableStyle(style_cmds))
-    story.append(table)
+        img_cell = Paragraph('', _S(f'ic{i}'))
+        if has_images and result.image and hasattr(result.image, 'path') and os.path.exists(result.image.path):
+            try:
+                img_cell = RLImage(result.image.path, width=IMG_W, height=IMG_H)
+            except Exception:
+                pass
+
+        row = [
+            Paragraph(str(i), _S(f'n{i}', fontSize=9, alignment=TA_CENTER)),
+            _td(req_text),
+            Paragraph(status, _S(f'st{i}', fontName='Arial-Bold', fontSize=9, alignment=TA_CENTER)),
+            _td(comment),
+        ]
+        if has_images:
+            row.append(img_cell)
+        data_rows.append(row)
+
+        if not result.is_met:
+            style_cmds.append(('BACKGROUND', (0, i), (-1, i), HexColor('#fde8ea')))
+
+    results_table = Table(data_rows, colWidths=col_w, repeatRows=1)
+    results_table.setStyle(TableStyle(style_cmds))
+    story.append(results_table)
 
     doc.build(story)
     return buf.getvalue()
@@ -127,13 +224,12 @@ def _send_failure_email(inspection):
     finished  = inspection.completed_at.strftime('%Y-%m-%d %H:%M') if inspection.completed_at else '—'
 
     body = (
-        f'Inspekcja serwerowni – wykryto niezgodności\n\n'
+        f'Inspekcja AuditManager – wykryto niezgodności\n\n'
         f'Audyt:     {audit.name}\n'
         f'Inspektor: {inspector}\n'
         f'Data:      {finished}\n\n'
         f'Niezgodne punkty:\n{failed_lines}\n\n'
-        f'Proszę o weryfikację i podjęcie działań naprawczych.\n\n'
-        f'Z poważaniem,\nIT Tools Wilga – Brueggen Polska Sp. z o.o.'
+        f'Proszę o weryfikację i podjęcie działań naprawczych.'
     )
 
     pdf_bytes    = _generate_inspection_pdf(inspection)
@@ -142,7 +238,7 @@ def _send_failure_email(inspection):
     return send_email(
         settings=settings_data,
         to_emails=[helpdesk_email],
-        subject=f'[Serwerownia] Niezgodności – {audit.name} – {finished}',
+        subject=f'[AuditManager] Niezgodności – {audit.name} – {finished}',
         body=body,
         pdf_bytes=pdf_bytes,
         pdf_filename=pdf_filename,
