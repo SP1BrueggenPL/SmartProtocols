@@ -6,7 +6,7 @@
   <a href="{% url 'audit_detail' audit.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
   <div>
     <h4 class="mb-0 fw-bold"><i class="bi bi-clipboard-check me-2 text-success"></i>Szczegóły inspekcji</h4>
-    <small class="text-muted">{{ audit.name }} · {{ inspection.user.get_full_name|default:inspection.user.username|default:"—" }}</small>
+    <small class="text-muted">{{ audit.name }} · {% if inspection.user %}{{ inspection.user.get_full_name|default:inspection.user.username }}{% else %}—{% endif %}</small>
   </div>
 </div>
 
@@ -57,7 +57,7 @@
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body py-3 px-4 d-flex flex-column align-items-center justify-content-center gap-1">
         <div class="text-muted small">Inspektor</div>
-        <div class="fw-semibold">{{ inspection.user.get_full_name|default:inspection.user.username|default:"—" }}</div>
+        <div class="fw-semibold">{% if inspection.user %}{{ inspection.user.get_full_name|default:inspection.user.username }}{% else %}—{% endif %}</div>
       </div>
     </div>
   </div>
