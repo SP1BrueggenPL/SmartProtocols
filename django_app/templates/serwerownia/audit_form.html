@@ -70,13 +70,11 @@
                 {{ req_form.image }}
               </td>
               <td class="text-center align-middle">
-                {% if req_form.can_delete %}
-                  <div style="display:none">{{ req_form.DELETE }}</div>
-                  <button type="button" class="btn btn-sm btn-outline-danger delete-row-btn"
-                          data-delete-id="{{ req_form.DELETE.id_for_label }}">
-                    <i class="bi bi-trash me-1"></i>Usuń
-                  </button>
-                {% endif %}
+                <div style="display:none">{{ req_form.DELETE }}</div>
+                <button type="button" class="btn btn-sm btn-outline-danger delete-row-btn"
+                        data-delete-id="{{ req_form.DELETE.id_for_label }}">
+                  <i class="bi bi-trash me-1"></i>Usuń
+                </button>
               </td>
             </tr>
             {% endfor %}
