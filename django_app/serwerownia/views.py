@@ -1,3 +1,4 @@
+import io
 import os
 import sys
 
@@ -5,6 +6,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 from django.forms import inlineformset_factory
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
@@ -43,6 +45,70 @@ def _effective_settings():
     return data
 
 
+def _generate_inspection_pdf(inspection):
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.enums import TA_CENTER
+
+    results = list(inspection.results.select_related('requirement').all())
+    audit   = inspection.audit
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4,
+                            rightMargin=2*cm, leftMargin=2*cm,
+                            topMargin=2*cm, bottomMargin=2*cm)
+    styles     = getSampleStyleSheet()
+    cell_style = ParagraphStyle('Cell', parent=styles['Normal'], fontSize=8, leading=10)
+    meta_style = ParagraphStyle('Meta', parent=styles['Normal'], fontSize=10, spaceAfter=2)
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=14,
+                                  alignment=TA_CENTER, spaceAfter=6)
+
+    inspector = inspection.user.get_full_name() if inspection.user else '—'
+    started   = inspection.created_at.strftime('%Y-%m-%d %H:%M') if inspection.created_at else '—'
+    finished  = inspection.completed_at.strftime('%Y-%m-%d %H:%M') if inspection.completed_at else 'W trakcie'
+
+    story = [
+        Paragraph('Raport inspekcji serwerowni', title_style),
+        Paragraph(f'<b>Audyt:</b> {audit.name}', meta_style),
+        Paragraph(f'<b>Inspektor:</b> {inspector}', meta_style),
+        Paragraph(f'<b>Start:</b> {started}', meta_style),
+        Paragraph(f'<b>Zakończenie:</b> {finished}', meta_style),
+        Spacer(1, 0.5 * cm),
+    ]
+
+    style_cmds = [
+        ('BACKGROUND',    (0, 0), (-1,  0), colors.HexColor('#2c5282')),
+        ('TEXTCOLOR',     (0, 0), (-1,  0), colors.white),
+        ('FONTNAME',      (0, 0), (-1,  0), 'Helvetica-Bold'),
+        ('FONTSIZE',      (0, 0), (-1, -1), 8),
+        ('ALIGN',         (2, 0), (2,  -1), 'CENTER'),
+        ('VALIGN',        (0, 0), (-1, -1), 'TOP'),
+        ('GRID',          (0, 0), (-1, -1), 0.5, colors.grey),
+        ('TOPPADDING',    (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+    ]
+
+    data = [['#', 'Punkt kontrolny', 'Status', 'Komentarz']]
+    for i, result in enumerate(results, 1):
+        req_text = result.requirement.text if result.requirement else '—'
+        status   = 'OK' if result.is_met else 'NOK'
+        comment  = result.comment or '—'
+        data.append([str(i), Paragraph(req_text, cell_style), status, Paragraph(comment, cell_style)])
+        if not result.is_met:
+            style_cmds.append(('BACKGROUND', (0, i), (-1, i), colors.Color(1, 0.88, 0.88)))
+
+    col_w = [1*cm, 7.5*cm, 2*cm, 6.5*cm]
+    table = Table(data, colWidths=col_w, repeatRows=1)
+    table.setStyle(TableStyle(style_cmds))
+    story.append(table)
+
+    doc.build(story)
+    return buf.getvalue()
+
+
 def _send_failure_email(inspection):
     """Wysyła raport o niezgodnościach do helpdesk przez Azure."""
     from email_sender import send_email
@@ -70,13 +136,16 @@ def _send_failure_email(inspection):
         f'Z poważaniem,\nIT Tools Wilga – Brueggen Polska Sp. z o.o.'
     )
 
+    pdf_bytes    = _generate_inspection_pdf(inspection)
+    pdf_filename = f'inspekcja_{audit.name}_{inspection.pk}.pdf'
+
     return send_email(
         settings=settings_data,
         to_emails=[helpdesk_email],
         subject=f'[Serwerownia] Niezgodności – {audit.name} – {finished}',
         body=body,
-        pdf_bytes=None,
-        pdf_filename=None,
+        pdf_bytes=pdf_bytes,
+        pdf_filename=pdf_filename,
     )
 
 
@@ -100,7 +169,8 @@ RequirementFormSet = inlineformset_factory(
     can_delete=True,
     labels={'text': 'Punkt kontrolny', 'image': 'Zdjęcie przykładowe'},
     widgets={
-        'text': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'np. Zasilanie UPS sprawne'}),
+        'text':  forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'np. Zasilanie UPS sprawne'}),
+        'image': forms.ClearableFileInput(attrs={'class': 'form-control form-control-sm'}),
     },
 )
 
@@ -223,11 +293,14 @@ def inspection_fill(request, audit_pk, pk):
                 errors.append(f'Komentarz wymagany dla punktu: „{req_text}"')
 
         if errors:
+            for result in results:
+                result.is_met  = request.POST.get(f'is_met_{result.pk}') == 'true'
+                result.comment = request.POST.get(f'comment_{result.pk}', '').strip()
             for e in errors:
                 messages.warning(request, e)
             return render(request, 'serwerownia/inspection_fill.html', {
                 'audit': audit, 'inspection': inspection, 'results': results,
-                'post': request.POST,
+                'general_comment': request.POST.get('general_comment', ''),
             })
 
         for result in results:
@@ -245,7 +318,8 @@ def inspection_fill(request, audit_pk, pk):
         return redirect('inspection_detail', audit_pk=audit_pk, pk=pk)
 
     return render(request, 'serwerownia/inspection_fill.html', {
-        'audit': audit, 'inspection': inspection, 'results': results, 'post': {},
+        'audit': audit, 'inspection': inspection, 'results': results,
+        'general_comment': inspection.comment,
     })
 
 
@@ -303,3 +377,14 @@ def inspection_delete(request, audit_pk, pk):
     return render(request, 'serwerownia/inspection_confirm_delete.html', {
         'audit': audit, 'inspection': inspection,
     })
+
+
+@user_passes_test(_is_audit_manager, login_url='dashboard')
+def inspection_pdf(request, audit_pk, pk):
+    audit      = get_object_or_404(ServerAudit, pk=audit_pk)
+    inspection = get_object_or_404(AuditInspection, pk=pk, audit=audit)
+    pdf_bytes  = _generate_inspection_pdf(inspection)
+    filename   = f'inspekcja_{audit.name}_{inspection.pk}.pdf'
+    response   = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response

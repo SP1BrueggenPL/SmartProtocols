@@ -122,7 +122,10 @@
 </div>
 {% endif %}
 
-<div class="d-flex gap-2 justify-content-end">
+<div class="d-flex gap-2 justify-content-end flex-wrap">
+  <a href="{% url 'inspection_pdf' audit.pk inspection.pk %}" class="btn btn-outline-danger">
+    <i class="bi bi-file-earmark-pdf me-1"></i>Pobierz PDF
+  </a>
   {% if not inspection.is_completed %}
   <a href="{% url 'inspection_fill' audit.pk inspection.pk %}" class="btn btn-outline-warning">
     <i class="bi bi-pencil-square me-1"></i>Edytuj wyniki</a>

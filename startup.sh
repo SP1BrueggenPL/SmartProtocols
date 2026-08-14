@@ -5,7 +5,7 @@ set -e
 # from that directory. We use dirname to reliably find django_app/ next to us.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-mkdir -p /home/data
+mkdir -p /home/data/media
 
 cd "$SCRIPT_DIR/django_app"
 

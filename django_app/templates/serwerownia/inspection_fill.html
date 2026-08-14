@@ -4,23 +4,25 @@
 {% block content %}
 <div class="d-flex align-items-center gap-3 mb-4">
   <a href="{% url 'audit_detail' audit.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-  <div>
+  <div class="flex-grow-1">
     <h4 class="mb-0 fw-bold"><i class="bi bi-clipboard-check me-2 text-success"></i>Wypełnij inspekcję</h4>
     <small class="text-muted">{{ audit.name }} · Start: {{ inspection.created_at|date:"Y-m-d H:i" }}</small>
   </div>
-</div>
-
-<div class="alert alert-info mb-4">
-  <i class="bi bi-stopwatch me-2"></i>
-  Timer 3-minutowy startuje od momentu wejścia w inspekcję. Przycisk „Zakończ" będzie aktywny po upływie 3 minut.
+  <div class="card border-0 shadow-sm px-4 py-2 text-center">
+    <div class="text-muted small"><i class="bi bi-stopwatch me-1"></i>Czas do zakończenia</div>
+    <div class="fw-bold font-monospace fs-5" id="fillTimerDisplay">—</div>
+  </div>
 </div>
 
 <form method="post" enctype="multipart/form-data" id="fillForm">
   {% csrf_token %}
 
   <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white fw-semibold py-3">
-      <i class="bi bi-list-check me-2 text-primary"></i>Punkty kontrolne
+    <div class="card-header bg-white fw-semibold py-3 d-flex align-items-center justify-content-between">
+      <div><i class="bi bi-list-check me-2 text-primary"></i>Punkty kontrolne</div>
+      <button type="button" class="btn btn-sm btn-outline-success" id="markAllOkBtn">
+        <i class="bi bi-check2-all me-1"></i>Zaznacz wszystkie OK
+      </button>
     </div>
     <div class="table-responsive">
       <table class="table table-bordered align-middle mb-0">
@@ -49,14 +51,15 @@
                   <input class="form-check-input status-radio" type="radio"
                          name="is_met_{{ result.pk }}" id="ok_{{ result.pk }}"
                          value="true"
-                         {% if post %}{% if post|default:'' %}{% if result.pk|stringformat:"s" in post %}{% endif %}{% endif %}{% endif %}
+                         {% if result.is_met %}checked{% endif %}
                          onchange="onStatusChange({{ result.pk }})">
                   <label class="form-check-label badge bg-success-subtle text-success border border-success-subtle px-2 py-1" for="ok_{{ result.pk }}">OK</label>
                 </div>
                 <div class="form-check form-check-inline m-0">
                   <input class="form-check-input status-radio" type="radio"
                          name="is_met_{{ result.pk }}" id="nok_{{ result.pk }}"
-                         value="false" checked
+                         value="false"
+                         {% if not result.is_met %}checked{% endif %}
                          onchange="onStatusChange({{ result.pk }})">
                   <label class="form-check-label badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" for="nok_{{ result.pk }}">NOK</label>
                 </div>
@@ -68,7 +71,7 @@
                         id="comment_{{ result.pk }}"
                         rows="2"
                         placeholder="Komentarz…"
-                        data-result="{{ result.pk }}">{{ post|default:'' }}</textarea>
+                        data-result="{{ result.pk }}">{{ result.comment }}</textarea>
             </td>
             <td>
               {% if result.image %}
@@ -87,7 +90,7 @@
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
       <label class="form-label fw-semibold">Komentarz ogólny</label>
-      <textarea name="general_comment" class="form-control" rows="2" placeholder="Opcjonalne uwagi ogólne…"></textarea>
+      <textarea name="general_comment" class="form-control" rows="2" placeholder="Opcjonalne uwagi ogólne…">{{ general_comment }}</textarea>
     </div>
   </div>
 
@@ -103,18 +106,45 @@
 
 {% block scripts %}
 <script>
+(function() {
+  var startTime = new Date('{{ inspection.created_at|date:"c" }}');
+  var TIMER_SECONDS = 180;
+  var display = document.getElementById('fillTimerDisplay');
+
+  function updateFillTimer() {
+    var elapsed = (Date.now() - startTime.getTime()) / 1000;
+    var remaining = Math.max(0, TIMER_SECONDS - elapsed);
+    if (remaining <= 0) {
+      display.textContent = 'Gotowe';
+      display.classList.add('text-success');
+    } else {
+      var mins = Math.floor(remaining / 60);
+      var secs = Math.floor(remaining % 60);
+      display.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+      setTimeout(updateFillTimer, 500);
+    }
+  }
+  updateFillTimer();
+})();
+
 function onStatusChange(resultId) {
-  const nok = document.getElementById('nok_' + resultId).checked;
-  const comment = document.getElementById('comment_' + resultId);
+  var nok = document.getElementById('nok_' + resultId).checked;
+  var comment = document.getElementById('comment_' + resultId);
   comment.required = nok;
   comment.classList.toggle('border-danger', nok);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize: all NOK selected by default → comments required
   {% for result in results %}
   onStatusChange({{ result.pk }});
   {% endfor %}
+
+  document.getElementById('markAllOkBtn').addEventListener('click', function() {
+    document.querySelectorAll('.status-radio[value="true"]').forEach(function(radio) {
+      radio.checked = true;
+      onStatusChange(radio.id.replace('ok_', ''));
+    });
+  });
 });
 </script>
 {% endblock %}
