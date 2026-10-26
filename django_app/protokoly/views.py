@@ -223,8 +223,14 @@ def dashboard(request):
 
 @login_required
 def document_new(request):
-    return render(request, 'document_form.html',
-                  {'document': None, 'items': [], 'mode': 'new'})
+    u = request.user
+    return render(request, 'document_form.html', {
+        'document': None,
+        'items': [],
+        'mode': 'new',
+        'default_issuer_name':  u.get_full_name() or u.username,
+        'default_issuer_email': u.email,
+    })
 
 
 @login_required

@@ -95,7 +95,7 @@
         <div class="col-md-6">
           <label class="form-label fw-semibold">Przekazujący <span class="text-danger">*</span></label>
           <input type="text" name="issuer_name" class="form-control" required placeholder="Imię i nazwisko"
-                 value="{% if document %}{{ document.issuer_name }}{% endif %}">
+                 value="{% if document %}{{ document.issuer_name }}{% else %}{{ default_issuer_name }}{% endif %}">
         </div>
         <div class="col-md-6">
           <label class="form-label fw-semibold">Przyjmujący <span class="text-danger">*</span></label>
@@ -108,7 +108,7 @@
             <span class="input-group-text"><i class="bi bi-envelope"></i></span>
             <input type="email" name="issuer_email" class="form-control"
                    placeholder="jan.kowalski@brueggen.pl"
-                   value="{% if document %}{{ document.issuer_email }}{% endif %}">
+                   value="{% if document %}{{ document.issuer_email }}{% else %}{{ default_issuer_email }}{% endif %}">
           </div>
         </div>
         <div class="col-md-6">
