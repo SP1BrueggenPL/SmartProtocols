@@ -514,7 +514,8 @@ def settings_view(request):
         if action == 'email_settings':
             for key in ['accounting_email', 'helpdesk_email', 'azure_connection_string',
                         'azure_sender_address', 'azure_from_name']:
-                AppSetting.set(key, request.POST.get(key, ''))
+                if key in request.POST:
+                    AppSetting.set(key, request.POST.get(key, ''))
             messages.success(request, 'Ustawienia zostały zapisane.')
 
         elif action == 'test_email':
