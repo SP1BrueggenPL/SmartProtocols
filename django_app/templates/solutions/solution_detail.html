@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}{{ sol.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div class="d-flex align-items-center gap-3">
+    <a href="{% url 'solution_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="bi bi-layers me-2 text-primary"></i>{{ sol.name }}</h4>
+      <div class="d-flex gap-2 align-items-center mt-1 flex-wrap">
+        {% if sol.category == 'support' %}<span class="badge bg-info-subtle text-info border border-info-subtle">Wsparcie</span>
+        {% elif sol.category == 'simple' %}<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Prosty proces</span>
+        {% else %}<span class="badge bg-primary-subtle text-primary border border-primary-subtle">Rozległy proces</span>{% endif %}
+        {% if sol.technology == 'power_platform' %}<span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-lightning me-1"></i>Power Platform</span>
+        {% elif sol.technology == 'vibe_coding' %}<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-code-slash me-1"></i>Vibe Coding</span>{% endif %}
+        <span class="badge border {{ sol.status_badge_class }}">{{ sol.status_label }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'solution_edit' sol.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-pencil me-1"></i>Edytuj</a>
+    {% if request.user.is_staff %}
+    <a href="{% url 'solution_delete' sol.pk %}" class="btn btn-outline-danger btn-sm">
+      <i class="bi bi-trash me-1"></i>Usuń</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if sol.description %}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <h6 class="fw-semibold text-muted mb-2"><i class="bi bi-chat-text me-1"></i>Opis zapotrzebowania</h6>
+    <p class="mb-0">{{ sol.description|linebreaksbr }}</p>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-4 mb-4">
+
+  {# Checklist PDM #}
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold py-3 d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-list-check me-2 text-primary"></i>Checklista PDM</span>
+        <span class="badge bg-primary">{{ sol.progress_pct }}%</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="progress rounded-0" style="height:4px">
+          <div class="progress-bar bg-primary" style="width:{{ sol.progress_pct }}%"></div>
+        </div>
+        <ul class="list-group list-group-flush">
+          {% for step_num, step_name in pdm_steps %}
+          <li class="list-group-item d-flex align-items-center gap-3 py-2">
+            <form method="post" action="{% url 'solution_toggle_step' sol.pk step_num %}" class="mb-0">
+              {% csrf_token %}
+              <button type="submit"
+                      class="btn btn-sm {% if sol.is_step_done step_num %}btn-success{% else %}btn-outline-secondary{% endif %} rounded-circle"
+                      style="width:28px;height:28px;padding:0;line-height:1"
+                      title="{% if sol.is_step_done step_num %}Cofnij{% else %}Zaznacz jako ukończone{% endif %}">
+                {% if sol.is_step_done step_num %}<i class="bi bi-check"></i>{% else %}<span class="small">{{ step_num }}</span>{% endif %}
+              </button>
+            </form>
+            <span class="{% if sol.is_step_done step_num %}text-muted text-decoration-line-through{% endif %}">
+              {{ step_name }}
+            </span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  {# Dodaj wpis #}
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-plus-circle me-2 text-primary"></i>Dodaj wpis do kontroli wersji
+      </div>
+      <div class="card-body">
+        <form method="post" action="{% url 'solution_log_add' sol.pk %}">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-sm-4">
+              <label class="form-label fw-semibold">Wersja <span class="text-danger">*</span></label>
+              <input type="text" name="version" class="form-control" placeholder="np. 1.0.0" required>
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label fw-semibold">Data</label>
+              <input type="date" name="log_date" class="form-control"
+                     value="{% now 'Y-m-d' %}">
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label fw-semibold">Typ zmiany</label>
+              <select name="change_type" class="form-select">
+                <option value="feature">Nowa funkcja</option>
+                <option value="fix">Poprawka</option>
+                <option value="deployment">Wdrożenie</option>
+                <option value="test">Faza testowa</option>
+                <option value="other">Inne</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Opis zmian <span class="text-danger">*</span></label>
+              <textarea name="description" class="form-control" rows="3"
+                        placeholder="Co zostało wykonane w tej wersji…" required></textarea>
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-save me-1"></i>Zapisz wpis
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# Tabela kontroli wersji #}
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white fw-semibold py-3">
+    <i class="bi bi-clock-history me-2 text-primary"></i>Kontrola wersji ({{ logs|length }})
+  </div>
+  {% if logs %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Wersja</th>
+          <th>Data</th>
+          <th>Typ</th>
+          <th>Opis zmian</th>
+          <th>Autor</th>
+          {% if request.user.is_staff %}<th class="text-end">Akcje</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td><span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">v{{ log.version }}</span></td>
+          <td class="text-muted small">{{ log.log_date }}</td>
+          <td>
+            {% if log.change_type == 'feature' %}<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-plus-circle me-1"></i>Funkcja</span>
+            {% elif log.change_type == 'fix' %}<span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-bug me-1"></i>Poprawka</span>
+            {% elif log.change_type == 'deployment' %}<span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-rocket me-1"></i>Wdrożenie</span>
+            {% elif log.change_type == 'test' %}<span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-clipboard-check me-1"></i>Testowanie</span>
+            {% else %}<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Inne</span>{% endif %}
+          </td>
+          <td style="max-width:400px">{{ log.description|linebreaksbr }}</td>
+          <td class="text-muted small">
+            {% if log.author %}{{ log.author.get_full_name|default:log.author.username }}{% else %}—{% endif %}
+          </td>
+          {% if request.user.is_staff %}
+          <td class="text-end">
+            <form method="post" action="{% url 'solution_log_delete' sol.pk log.pk %}"
+                  onsubmit="return confirm('Usunąć ten wpis?')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger" title="Usuń">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-4 text-muted">
+    <i class="bi bi-clock-history display-4 d-block mb-2 opacity-25"></i>
+    <p class="mb-0">Brak wpisów. Dodaj pierwszy wpis kontroli wersji powyżej.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

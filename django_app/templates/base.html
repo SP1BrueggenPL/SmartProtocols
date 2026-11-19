@@ -52,6 +52,21 @@
         {% endif %}{% endfor %}{% endif %}
         {% if user.is_staff %}
         <li class="nav-item">
+          <a class="nav-link {% if 'solution' in request.resolver_match.url_name %}active{% endif %}"
+             href="{% url 'solution_list' %}">
+            <i class="bi bi-layers me-1"></i>T&amp;I Solutions
+          </a>
+        </li>
+        {% else %}{% for grp in user.groups.all %}{% if grp.name == 'T&I Wilga' %}
+        <li class="nav-item">
+          <a class="nav-link {% if 'solution' in request.resolver_match.url_name %}active{% endif %}"
+             href="{% url 'solution_list' %}">
+            <i class="bi bi-layers me-1"></i>T&amp;I Solutions
+          </a>
+        </li>
+        {% endif %}{% endfor %}{% endif %}
+        {% if user.is_staff %}
+        <li class="nav-item">
           <a class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}"
              href="{% url 'settings' %}">
             <i class="bi bi-gear me-1"></i>Ustawienia

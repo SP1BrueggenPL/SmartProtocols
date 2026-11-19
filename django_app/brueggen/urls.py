@@ -7,5 +7,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('protokoly.urls')),
     path('serwerownia/', include('serwerownia.urls')),
+    path('solutions/', include('solutions.urls')),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Usuń {{ sol.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{% url 'solution_detail' sol.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="mb-0 fw-bold text-danger"><i class="bi bi-trash me-2"></i>Usuń projekt</h4>
+</div>
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-4">
+    <p>Czy na pewno chcesz usunąć projekt <strong>{{ sol.name }}</strong>?</p>
+    <p class="text-muted small">Zostaną usunięte wszystkie wpisy kontroli wersji ({{ sol.logs.count }}).</p>
+    <form method="post" class="d-flex gap-2">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Tak, usuń</button>
+      <a href="{% url 'solution_detail' sol.pk %}" class="btn btn-outline-secondary">Anuluj</a>
+    </form>
+  </div>
+</div>
+{% endblock %}
