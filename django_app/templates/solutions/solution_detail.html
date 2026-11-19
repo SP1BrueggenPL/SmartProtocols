@@ -4,10 +4,11 @@
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
   <div class="d-flex align-items-center gap-3">
-    <a href="{% url 'solution_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <a href="{% url 'solution_view' sol.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
     <div>
       <h4 class="mb-0 fw-bold"><i class="bi bi-layers me-2 text-primary"></i>{{ sol.name }}</h4>
       <div class="d-flex gap-2 align-items-center mt-1 flex-wrap">
+        {% if sol.department %}<span class="badge bg-light text-dark border"><i class="bi bi-folder me-1"></i>{{ sol.department.name }}</span>{% endif %}
         {% if sol.category == 'support' %}<span class="badge bg-info-subtle text-info border border-info-subtle">Wsparcie</span>
         {% elif sol.category == 'simple' %}<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Prosty proces</span>
         {% else %}<span class="badge bg-primary-subtle text-primary border border-primary-subtle">Rozległy proces</span>{% endif %}
@@ -18,6 +19,8 @@
     </div>
   </div>
   <div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'solution_view' sol.pk %}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-eye me-1"></i>Podgląd</a>
     <a href="{% url 'solution_edit' sol.pk %}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-pencil me-1"></i>Edytuj</a>
     {% if request.user.is_staff %}
@@ -35,6 +38,54 @@
   </div>
 </div>
 {% endif %}
+
+{# --- Import danych z Teams/SharePoint --- #}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white fw-semibold py-3" data-bs-toggle="collapse" data-bs-target="#importPanel" role="button">
+    <i class="bi bi-cloud-upload me-2 text-primary"></i>Import danych projektu (UpdateLogi, checklista, dokumentacja, backupy)
+    <i class="bi bi-chevron-down float-end"></i>
+  </div>
+  <div class="collapse" id="importPanel">
+    <div class="card-body">
+      <form method="post" action="{% url 'solution_data_import' sol.pk %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Plik UpdateLogs.xlsx</label>
+            <input type="file" name="updatelogs_xlsx" class="form-control" accept=".xlsx">
+            <div class="form-text">Oryginalny szablon PDM — wszystkie wiersze z danymi zostaną dodane jako wpisy UpdateLog.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Plik SolutionChecklist.docx</label>
+            <input type="file" name="checklist_docx" class="form-control" accept=".docx">
+            <div class="form-text">Zaznaczone checkboxy nadpiszą postęp checklisty PDM.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Pliki dokumentacji / instrukcji</label>
+            <input type="file" name="doc_files" class="form-control" multiple accept=".pdf,.doc,.docx">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Pliki backupu</label>
+            <input type="file" name="backup_files" class="form-control" multiple>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Środowisko backupu</label>
+            <select name="backup_environment" class="form-select">
+              <option value="">—</option>
+              <option value="test">Dev/Testowe</option>
+              <option value="prod">Prod</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-upload me-1"></i>Importuj wybrane pliki
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <div class="row g-4 mb-4">
 
@@ -71,88 +122,188 @@
     </div>
   </div>
 
-  {# Dodaj wpis #}
+  {# Dokumentacja i backupy #}
   <div class="col-lg-7">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-header bg-white fw-semibold py-3">
-        <i class="bi bi-plus-circle me-2 text-primary"></i>Dodaj wpis do kontroli wersji
+        <i class="bi bi-file-earmark-text me-2 text-primary"></i>Dokumentacja i backupy
       </div>
       <div class="card-body">
-        <form method="post" action="{% url 'solution_log_add' sol.pk %}">
+        <form method="post" action="{% url 'solution_doc_add' sol.pk %}" enctype="multipart/form-data" class="row g-2 mb-3 pb-3 border-bottom">
           {% csrf_token %}
-          <div class="row g-3">
-            <div class="col-sm-4">
-              <label class="form-label fw-semibold">Wersja <span class="text-danger">*</span></label>
-              <input type="text" name="version" class="form-control" placeholder="np. 1.0.0" required>
-            </div>
-            <div class="col-sm-4">
-              <label class="form-label fw-semibold">Data</label>
-              <input type="date" name="log_date" class="form-control"
-                     value="{% now 'Y-m-d' %}">
-            </div>
-            <div class="col-sm-4">
-              <label class="form-label fw-semibold">Typ zmiany</label>
-              <select name="change_type" class="form-select">
-                <option value="feature">Nowa funkcja</option>
-                <option value="fix">Poprawka</option>
-                <option value="deployment">Wdrożenie</option>
-                <option value="test">Faza testowa</option>
-                <option value="other">Inne</option>
-              </select>
-            </div>
-            <div class="col-12">
-              <label class="form-label fw-semibold">Opis zmian <span class="text-danger">*</span></label>
-              <textarea name="description" class="form-control" rows="3"
-                        placeholder="Co zostało wykonane w tej wersji…" required></textarea>
-            </div>
-            <div class="col-12">
-              <button type="submit" class="btn btn-primary btn-sm">
-                <i class="bi bi-save me-1"></i>Zapisz wpis
-              </button>
-            </div>
+          <div class="col-sm-4">
+            <select name="category" class="form-select form-select-sm">
+              <option value="documentation">Dokumentacja/Instrukcja</option>
+              <option value="backup">Backup</option>
+            </select>
+          </div>
+          <div class="col-sm-3">
+            <select name="environment" class="form-select form-select-sm">
+              <option value="">Środ. (backup)</option>
+              <option value="test">Dev/Test</option>
+              <option value="prod">Prod</option>
+            </select>
+          </div>
+          <div class="col-sm-5">
+            <input type="file" name="files" class="form-control form-control-sm" multiple required>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-upload me-1"></i>Wgraj plik(i)
+            </button>
           </div>
         </form>
+
+        {% if documents %}
+        <div class="list-group list-group-flush">
+          {% for doc in documents %}
+          <div class="list-group-item px-0 py-2 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2 text-truncate">
+              <i class="bi bi-{% if doc.is_pdf %}file-earmark-pdf text-danger{% else %}file-earmark-word text-primary{% endif %}"></i>
+              <div class="text-truncate">
+                <div class="fw-semibold text-truncate small">{{ doc.title }}</div>
+                <small class="text-muted">
+                  {% if doc.category == 'backup' %}Backup{% else %}Dokumentacja{% endif %}
+                  {% if doc.environment %} · {{ doc.get_environment_display }}{% endif %}
+                  · {{ doc.uploaded_at|date:"Y-m-d" }}
+                </small>
+              </div>
+            </div>
+            <div class="d-flex gap-1 flex-shrink-0">
+              <a href="{{ doc.file.url }}" download class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i></a>
+              <form method="post" action="{% url 'solution_doc_delete' sol.pk doc.pk %}" onsubmit="return confirm('Usunąć ten plik?')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted small mb-0">Brak wgranych plików.</p>
+        {% endif %}
       </div>
     </div>
   </div>
 
 </div>
 
-{# Tabela kontroli wersji #}
+{# Dodaj wpis UpdateLog #}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white fw-semibold py-3">
+    <i class="bi bi-plus-circle me-2 text-primary"></i>Dodaj wpis UpdateLog
+  </div>
+  <div class="card-body">
+    <form method="post" action="{% url 'solution_log_add' sol.pk %}">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-sm-4">
+          <label class="form-label fw-semibold">Data rozpoczęcia aktualizacji <span class="text-danger">*</span></label>
+          <input type="date" name="update_start_date" class="form-control" required value="{% now 'Y-m-d' %}">
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label fw-semibold">Osoba odpowiedzialna <span class="text-danger">*</span></label>
+          <input type="text" name="responsible_person" class="form-control" required
+                 value="{{ request.user.get_full_name|default:request.user.username }}">
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label fw-semibold">Środowisko <span class="text-danger">*</span></label>
+          <select name="environment" class="form-select" required>
+            <option value="test">Testowe</option>
+            <option value="prod" selected>Produkcyjne</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Cel aktualizacji <span class="text-danger">*</span></label>
+          <input type="text" name="goal" class="form-control" required placeholder="np. Dodanie raportu miesięcznego">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Opis aktualizacji <span class="text-danger">*</span></label>
+          <textarea name="description" class="form-control" rows="3" required
+                    placeholder="Co dokładnie zostało zmienione…"></textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Blokery/Problemy techniczne <span class="text-muted fw-normal">(opcjonalne)</span></label>
+          <textarea name="blockers" class="form-control" rows="2" placeholder="Napotkane problemy, jeśli wystąpiły…"></textarea>
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label fw-semibold">Data wdrożenia aktualizacji</label>
+          <input type="date" name="log_date" class="form-control">
+        </div>
+        <div class="col-sm-4 d-flex align-items-end">
+          <div class="form-check">
+            <input type="checkbox" name="deployed" id="id_deployed" class="form-check-input">
+            <label class="form-check-label fw-semibold" for="id_deployed">Wdrożono?</label>
+          </div>
+        </div>
+        <div class="col-sm-4 d-flex align-items-end">
+          <div class="form-check">
+            <input type="checkbox" name="user_notified" id="id_notified" class="form-check-input">
+            <label class="form-check-label fw-semibold" for="id_notified">Poinformowano użytkownika?</label>
+          </div>
+        </div>
+
+        <div class="col-12"><hr class="my-1"></div>
+        <div class="col-sm-4">
+          <label class="form-label fw-semibold">Wersja <span class="text-muted fw-normal">(opcjonalnie)</span></label>
+          <input type="text" name="version" class="form-control" placeholder="np. 1.0.0">
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label fw-semibold">Typ zmiany <span class="text-muted fw-normal">(opcjonalnie)</span></label>
+          <select name="change_type" class="form-select">
+            <option value="">—</option>
+            <option value="feature">Nowa funkcja</option>
+            <option value="fix">Poprawka</option>
+            <option value="deployment">Wdrożenie</option>
+            <option value="test">Faza testowa</option>
+            <option value="other">Inne</option>
+          </select>
+        </div>
+
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-save me-1"></i>Zapisz wpis
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# Tabela UpdateLogów #}
 <div class="card border-0 shadow-sm">
   <div class="card-header bg-white fw-semibold py-3">
-    <i class="bi bi-clock-history me-2 text-primary"></i>Kontrola wersji ({{ logs|length }})
+    <i class="bi bi-clock-history me-2 text-primary"></i>UpdateLogi ({{ logs|length }})
   </div>
   {% if logs %}
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
-          <th>Wersja</th>
-          <th>Data</th>
-          <th>Typ</th>
-          <th>Opis zmian</th>
-          <th>Autor</th>
-          {% if request.user.is_staff %}<th class="text-end">Akcje</th>{% endif %}
+          <th>Data rozp.</th><th>Osoba odp.</th><th>Cel</th><th>Opis</th>
+          <th>Środ.</th><th class="text-center">Wdr.?</th><th>Data wdr.</th>
+          <th class="text-center">Info?</th><th>Blokery</th><th class="text-end">Akcje</th>
         </tr>
       </thead>
       <tbody>
         {% for log in logs %}
         <tr>
-          <td><span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">v{{ log.version }}</span></td>
-          <td class="text-muted small">{{ log.log_date }}</td>
+          <td class="text-muted small">{{ log.update_start_date|date:"Y-m-d"|default:"—" }}</td>
+          <td class="small">{{ log.responsible_person|default:"—" }}</td>
+          <td style="max-width:160px"><small>{{ log.goal|default:"—" }}</small></td>
+          <td style="max-width:240px"><small>{{ log.description|linebreaksbr }}</small></td>
           <td>
-            {% if log.change_type == 'feature' %}<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-plus-circle me-1"></i>Funkcja</span>
-            {% elif log.change_type == 'fix' %}<span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-bug me-1"></i>Poprawka</span>
-            {% elif log.change_type == 'deployment' %}<span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-rocket me-1"></i>Wdrożenie</span>
-            {% elif log.change_type == 'test' %}<span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-clipboard-check me-1"></i>Testowanie</span>
-            {% else %}<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Inne</span>{% endif %}
+            {% if log.environment == 'test' %}<span class="badge bg-warning-subtle text-warning border border-warning-subtle">Test</span>
+            {% else %}<span class="badge bg-primary-subtle text-primary border border-primary-subtle">Prod</span>{% endif %}
           </td>
-          <td style="max-width:400px">{{ log.description|linebreaksbr }}</td>
-          <td class="text-muted small">
-            {% if log.author %}{{ log.author.get_full_name|default:log.author.username }}{% else %}—{% endif %}
+          <td class="text-center">
+            {% if log.deployed %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}
           </td>
-          {% if request.user.is_staff %}
+          <td class="text-muted small">{{ log.log_date|date:"Y-m-d"|default:"—" }}</td>
+          <td class="text-center">
+            {% if log.user_notified %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}
+          </td>
+          <td style="max-width:160px"><small class="text-muted">{{ log.blockers|default:"—" }}</small></td>
           <td class="text-end">
             <form method="post" action="{% url 'solution_log_delete' sol.pk log.pk %}"
                   onsubmit="return confirm('Usunąć ten wpis?')">
@@ -162,7 +313,6 @@
               </button>
             </form>
           </td>
-          {% endif %}
         </tr>
         {% endfor %}
       </tbody>
@@ -171,7 +321,7 @@
   {% else %}
   <div class="text-center py-4 text-muted">
     <i class="bi bi-clock-history display-4 d-block mb-2 opacity-25"></i>
-    <p class="mb-0">Brak wpisów. Dodaj pierwszy wpis kontroli wersji powyżej.</p>
+    <p class="mb-0">Brak wpisów. Dodaj pierwszy wpis UpdateLog powyżej lub zaimportuj plik UpdateLogs.xlsx.</p>
   </div>
   {% endif %}
 </div>

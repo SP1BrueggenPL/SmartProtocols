@@ -6,6 +6,9 @@
   <h4 class="mb-0 fw-bold"><i class="bi bi-layers me-2 text-primary"></i>T&amp;I Wilga — Solutions</h4>
   {% if can_edit %}
   <div class="d-flex gap-2">
+    <a href="{% url 'department_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-folder me-1"></i>Działy
+    </a>
     <a href="{% url 'solution_import' %}" class="btn btn-outline-secondary">
       <i class="bi bi-upload me-1"></i>Import
     </a>
@@ -46,76 +49,52 @@
 </div>
 
 {% if solutions %}
-<div class="card border-0 shadow-sm">
-  <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
-      <thead class="table-header">
-        <tr>
-          <th>Nazwa projektu</th>
-          <th>Kategoria</th>
-          <th>Technologia</th>
-          <th class="text-center">Postęp</th>
-          <th>Status</th>
-          <th>Utworzono</th>
-          <th class="text-end">Akcje</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for sol in solutions %}
-        <tr class="doc-row" onclick="window.location='{% url 'solution_view' sol.pk %}'">
-          <td class="fw-semibold text-primary">{{ sol.name }}</td>
-          <td>
-            {% if sol.category == 'support' %}<span class="badge bg-info-subtle text-info border border-info-subtle">Wsparcie</span>
-            {% elif sol.category == 'simple' %}<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Prosty</span>
-            {% else %}<span class="badge bg-primary-subtle text-primary border border-primary-subtle">Rozległy</span>{% endif %}
-          </td>
-          <td>
-            {% if sol.technology == 'power_platform' %}<span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-lightning me-1"></i>Power Platform</span>
-            {% elif sol.technology == 'vibe_coding' %}<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-code-slash me-1"></i>Vibe Coding</span>
-            {% elif sol.technology %}<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">{{ sol.get_technology_display }}</span>
-            {% else %}<span class="text-muted">—</span>{% endif %}
-          </td>
-          <td class="text-center" style="min-width:120px">
-            <div class="d-flex align-items-center gap-2">
-              <div class="progress flex-grow-1" style="height:6px">
-                <div class="progress-bar bg-primary" style="width:{{ sol.progress_pct }}%"></div>
-              </div>
-              <small class="text-muted">{{ sol.progress_pct }}%</small>
+
+{% include "solutions/_solution_table.html" with rows=no_dept %}
+
+<div class="accordion mb-4" id="deptAccordion">
+  {% for group in groups %}
+  <div class="accordion-item border-0 shadow-sm mb-3">
+    <h2 class="accordion-header">
+      <button class="accordion-button {% if not group.solutions and not group.subgroups %}collapsed{% endif %}"
+              type="button" data-bs-toggle="collapse" data-bs-target="#dept-{{ group.dept.pk }}">
+        <i class="bi bi-folder-fill me-2 text-warning"></i>
+        <span class="fw-semibold">{{ group.dept.name }}</span>
+        <span class="badge bg-secondary-subtle text-secondary ms-2">{{ group.solutions|length }}</span>
+      </button>
+    </h2>
+    <div id="dept-{{ group.dept.pk }}" class="accordion-collapse collapse show">
+      <div class="accordion-body p-0 pt-2">
+        {% if group.solutions %}
+          {% include "solutions/_solution_table.html" with rows=group.solutions %}
+        {% endif %}
+        {% for sub in group.subgroups %}
+          <div class="ms-3 mt-2 mb-2">
+            <div class="d-flex align-items-center gap-2 mb-1 text-muted">
+              <i class="bi bi-folder2"></i>
+              <span class="fw-semibold small">{{ sub.dept.name }}</span>
             </div>
-          </td>
-          <td>
-            <span class="badge border {{ sol.status_badge_class }}">{{ sol.status_label }}</span>
-          </td>
-          <td class="text-muted small">{{ sol.created_at|date:"Y-m-d" }}</td>
-          <td class="text-end" onclick="event.stopPropagation()">
-            <div class="d-flex gap-1 justify-content-end">
-              <a href="{% url 'solution_view' sol.pk %}" class="btn btn-sm btn-outline-primary" title="Podgląd">
-                <i class="bi bi-eye"></i></a>
-              {% if can_edit %}
-              <a href="{% url 'solution_detail' sol.pk %}" class="btn btn-sm btn-outline-secondary" title="Zarządzaj">
-                <i class="bi bi-tools"></i></a>
-              <a href="{% url 'solution_edit' sol.pk %}" class="btn btn-sm btn-outline-secondary" title="Edytuj">
-                <i class="bi bi-pencil"></i></a>
-              {% endif %}
-              {% if request.user.is_staff %}
-              <a href="{% url 'solution_delete' sol.pk %}" class="btn btn-sm btn-outline-danger" title="Usuń">
-                <i class="bi bi-trash"></i></a>
-              {% endif %}
-            </div>
-          </td>
-        </tr>
+            {% include "solutions/_solution_table.html" with rows=sub.solutions %}
+          </div>
         {% endfor %}
-      </tbody>
-    </table>
+        {% if not group.solutions and not group.subgroups %}
+          <p class="text-muted small ps-2 pb-2 mb-0">Brak projektów w tym dziale.</p>
+        {% endif %}
+      </div>
+    </div>
   </div>
+  {% endfor %}
 </div>
+
 {% else %}
 <div class="text-center py-5 text-muted">
   <i class="bi bi-layers display-3 d-block mb-3 opacity-25"></i>
   <h5>Brak projektów</h5>
   <p class="mb-4">Nie znaleziono żadnych Solutions.</p>
+  {% if can_edit %}
   <a href="{% url 'solution_new' %}" class="btn btn-primary">
     <i class="bi bi-plus-circle me-2"></i>Otwórz pierwszy projekt</a>
+  {% endif %}
 </div>
 {% endif %}
 {% endblock %}

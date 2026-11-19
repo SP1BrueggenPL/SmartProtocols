@@ -9,7 +9,13 @@
 
 <div class="card border-0 shadow-sm">
   <div class="card-body p-4">
-    <p class="text-muted mb-4">Wpisz nazwy projektów — jeden projekt w każdej linii. Wszystkie projekty otrzymają tę samą kategorię i technologię (możesz edytować je później).</p>
+    <p class="text-muted mb-4">Wpisz nazwy projektów — jeden projekt w każdej linii. Wszystkie projekty otrzymają tę samą kategorię, dział i technologię (możesz edytować je później).</p>
+    <div class="alert alert-info small">
+      <i class="bi bi-info-circle me-1"></i>
+      To tylko szybkie utworzenie „pustych" projektów po nazwie. Pełne dane — UpdateLogi, checklistę PDM,
+      dokumentację i backupy — wgrasz dla każdego projektu osobno w sekcji
+      <strong>„Import danych projektu"</strong> na stronie zarządzania danym projektem.
+    </div>
     <form method="post">
       {% csrf_token %}
       <div class="row g-3">
@@ -19,6 +25,16 @@
           <textarea name="projects" class="form-control font-monospace" rows="10" required
                     placeholder="AuditManager — moduł raportowania&#10;Power Apps Produkcja v2&#10;Automatyzacja faktur&#10;..."></textarea>
           <div class="form-text">Jeden projekt na linię.</div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Dział</label>
+          <select name="department" class="form-select">
+            <option value="">— brak —</option>
+            {% for dept in departments %}
+            <option value="{{ dept.pk }}">{% if dept.parent_id %}— {% endif %}{{ dept.name }}</option>
+            {% endfor %}
+          </select>
         </div>
 
         <div class="col-md-4">

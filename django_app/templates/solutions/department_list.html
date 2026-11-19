@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Działy T&I{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{% url 'solution_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="mb-0 fw-bold"><i class="bi bi-folder me-2 text-primary"></i>Działy i poddziały</h4>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-semibold py-3">Struktura działów</div>
+      <ul class="list-group list-group-flush">
+        {% for dept in top_departments %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-folder-fill text-warning me-2"></i>{{ dept.name }}</span>
+          <form method="post" action="{% url 'department_delete' dept.pk %}" class="m-0"
+                onsubmit="return confirm('Usunąć dział „{{ dept.name }}" wraz z poddziałami? Projekty pozostaną, ale bez przypisanego działu.');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+          </form>
+        </li>
+        {% for sub in dept.children.all %}
+        <li class="list-group-item d-flex justify-content-between align-items-center ps-5">
+          <span class="text-muted"><i class="bi bi-folder2 me-2"></i>{{ sub.name }}</span>
+          <form method="post" action="{% url 'department_delete' sub.pk %}" class="m-0"
+                onsubmit="return confirm('Usunąć poddział „{{ sub.name }}"?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+          </form>
+        </li>
+        {% endfor %}
+        {% empty %}
+        <li class="list-group-item text-muted">Brak działów — dodaj pierwszy obok.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-semibold py-3">Dodaj dział / poddział</div>
+      <div class="card-body">
+        <form method="post" action="{% url 'department_new' %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nazwa <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" required placeholder="np. Produkcja, Magazyn…">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Dział nadrzędny</label>
+            <select name="parent" class="form-select">
+              <option value="">— brak (dział główny) —</option>
+              {% for dept in top_departments %}
+              <option value="{{ dept.pk }}">{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Wybierz, aby utworzyć poddział wewnątrz istniejącego działu.</div>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>Dodaj
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

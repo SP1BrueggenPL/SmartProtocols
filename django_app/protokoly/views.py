@@ -141,12 +141,12 @@ def _save_items(request, doc):
 # ---------------------------------------------------------------------------
 
 def index(request):
-    return redirect('dashboard' if request.user.is_authenticated else 'login')
+    return redirect('home' if request.user.is_authenticated else 'login')
 
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect('home')
 
     error = None
     if request.method == 'POST':
@@ -155,7 +155,7 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user and user.is_active:
             login(request, user)
-            return redirect('dashboard')
+            return redirect('home')
         error = 'Nieprawidłowa nazwa użytkownika lub hasło.'
 
     return render(request, 'login.html', {'error': error})
@@ -164,6 +164,17 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+
+@login_required
+def home(request):
+    user = request.user
+    can_audit = user.is_staff or user.groups.filter(name='AuditManager').exists()
+    can_solutions = user.is_staff or user.groups.filter(name__in=['T&I Wilga', 'T&I Wilga Viewer']).exists()
+    return render(request, 'home.html', {
+        'can_audit': can_audit,
+        'can_solutions': can_solutions,
+    })
 
 
 # ---------------------------------------------------------------------------
