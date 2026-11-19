@@ -186,14 +186,21 @@
           </td>
           <td class="text-muted font-monospace small">{{ u.username }}</td>
           <td>
-            {% if u.current_group == 'Administratorzy' %}
-              <span class="badge badge-office">
-                <i class="bi bi-shield-lock me-1"></i>Administratorzy
-              </span>
-            {% elif u.current_group %}
-              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
-                <i class="bi bi-person me-1"></i>{{ u.current_group }}
-              </span>
+            {% if u.user_groups %}
+              <div class="d-flex flex-wrap gap-1">
+                {% if 'Administratorzy' in u.user_groups %}
+                  <span class="badge badge-office">
+                    <i class="bi bi-shield-lock me-1"></i>Administratorzy
+                  </span>
+                {% endif %}
+                {% for grp_name in u.user_groups %}
+                  {% if grp_name != 'Administratorzy' %}
+                  <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                    <i class="bi bi-person me-1"></i>{{ grp_name }}
+                  </span>
+                  {% endif %}
+                {% endfor %}
+              </div>
             {% else %}
               <span class="text-muted small">—</span>
             {% endif %}
@@ -244,7 +251,7 @@
                       <span>
                         <i class="bi bi-{% if g.name == 'Administratorzy' %}shield-lock{% else %}person{% endif %} me-2"></i>{{ g.name }}
                       </span>
-                      {% if u.current_group == g.name %}
+                      {% if g.name in u.user_groups %}
                       <i class="bi bi-check2 text-success ms-2"></i>
                       {% endif %}
                     </button>

@@ -626,10 +626,15 @@ def settings_view(request):
                 try:
                     u   = User.objects.get(pk=user_id)
                     grp = Group.objects.get(name=group_name)
-                    u.groups.set([grp])
-                    u.is_staff = (group_name == 'Administratorzy')
+                    if u.groups.filter(pk=grp.pk).exists():
+                        u.groups.remove(grp)
+                        msg = f'Usunięto grupę „{group_name}" dla {u.get_full_name() or u.username}.'
+                    else:
+                        u.groups.add(grp)
+                        msg = f'{u.get_full_name() or u.username} dodany do grupy „{group_name}".'
+                    u.is_staff = u.groups.filter(name='Administratorzy').exists()
                     u.save()
-                    messages.success(request, f'Użytkownik {u.get_full_name() or u.username} przypisany do grupy „{group_name}".')
+                    messages.success(request, msg)
                 except (User.DoesNotExist, Group.DoesNotExist):
                     messages.error(request, 'Błąd przypisania grupy.')
             else:
@@ -642,8 +647,7 @@ def settings_view(request):
                     .order_by('first_name', 'last_name')
     )
     for u in users_qs:
-        grp = u.groups.first()
-        u.current_group = grp.name if grp else ''
+        u.user_groups = list(u.groups.values_list('name', flat=True))
         try:
             u.must_change_pw = u.profile.must_change_password
         except UserProfile.DoesNotExist:
