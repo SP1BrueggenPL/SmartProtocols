@@ -55,13 +55,13 @@
             <form method="post" action="{% url 'solution_toggle_step' sol.pk step_num %}" class="mb-0">
               {% csrf_token %}
               <button type="submit"
-                      class="btn btn-sm {% if sol.is_step_done step_num %}btn-success{% else %}btn-outline-secondary{% endif %} rounded-circle"
+                      class="btn btn-sm {% if step_num in sol.completed_steps %}btn-success{% else %}btn-outline-secondary{% endif %} rounded-circle"
                       style="width:28px;height:28px;padding:0;line-height:1"
-                      title="{% if sol.is_step_done step_num %}Cofnij{% else %}Zaznacz jako ukończone{% endif %}">
-                {% if sol.is_step_done step_num %}<i class="bi bi-check"></i>{% else %}<span class="small">{{ step_num }}</span>{% endif %}
+                      title="{% if step_num in sol.completed_steps %}Cofnij{% else %}Zaznacz jako ukończone{% endif %}">
+                {% if step_num in sol.completed_steps %}<i class="bi bi-check"></i>{% else %}<span class="small">{{ step_num }}</span>{% endif %}
               </button>
             </form>
-            <span class="{% if sol.is_step_done step_num %}text-muted text-decoration-line-through{% endif %}">
+            <span class="{% if step_num in sol.completed_steps %}text-muted text-decoration-line-through{% endif %}">
               {{ step_name }}
             </span>
           </li>
