@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Import projektów{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{% url 'solution_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="mb-0 fw-bold"><i class="bi bi-upload me-2 text-primary"></i>Import projektów T&amp;I</h4>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-4">
+    <p class="text-muted mb-4">Wpisz nazwy projektów — jeden projekt w każdej linii. Wszystkie projekty otrzymają tę samą kategorię i technologię (możesz edytować je później).</p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+
+        <div class="col-12">
+          <label class="form-label fw-semibold">Nazwy projektów <span class="text-danger">*</span></label>
+          <textarea name="projects" class="form-control font-monospace" rows="10" required
+                    placeholder="AuditManager — moduł raportowania&#10;Power Apps Produkcja v2&#10;Automatyzacja faktur&#10;..."></textarea>
+          <div class="form-text">Jeden projekt na linię.</div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Kategoria</label>
+          <select name="category" id="id_cat" class="form-select" onchange="toggleTech()">
+            <option value="support">Prośba o wsparcie</option>
+            <option value="simple" selected>Prosty proces</option>
+            <option value="extensive">Rozległy proces</option>
+          </select>
+        </div>
+
+        <div class="col-md-4" id="tech-field" style="display:none">
+          <label class="form-label fw-semibold">Technologia</label>
+          <select name="technology" class="form-select">
+            <option value="power_platform">Power Platform</option>
+            <option value="vibe_coding">Vibe Coding</option>
+            <option value="other">Inne</option>
+          </select>
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-upload me-1"></i>Importuj projekty
+          </button>
+          <a href="{% url 'solution_list' %}" class="btn btn-outline-secondary">Anuluj</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function toggleTech() {
+  document.getElementById('tech-field').style.display =
+    document.getElementById('id_cat').value === 'extensive' ? '' : 'none';
+}
+</script>
+{% endblock %}

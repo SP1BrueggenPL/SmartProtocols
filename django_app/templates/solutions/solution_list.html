@@ -4,9 +4,16 @@
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
   <h4 class="mb-0 fw-bold"><i class="bi bi-layers me-2 text-primary"></i>T&amp;I Wilga — Solutions</h4>
-  <a href="{% url 'solution_new' %}" class="btn btn-primary">
-    <i class="bi bi-plus-circle me-2"></i>Nowy projekt
-  </a>
+  {% if can_edit %}
+  <div class="d-flex gap-2">
+    <a href="{% url 'solution_import' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-upload me-1"></i>Import
+    </a>
+    <a href="{% url 'solution_new' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-2"></i>Nowy projekt
+    </a>
+  </div>
+  {% endif %}
 </div>
 
 {# Search & filter #}
@@ -55,7 +62,7 @@
       </thead>
       <tbody>
         {% for sol in solutions %}
-        <tr class="doc-row" onclick="window.location='{% url 'solution_detail' sol.pk %}'">
+        <tr class="doc-row" onclick="window.location='{% url 'solution_view' sol.pk %}'">
           <td class="fw-semibold text-primary">{{ sol.name }}</td>
           <td>
             {% if sol.category == 'support' %}<span class="badge bg-info-subtle text-info border border-info-subtle">Wsparcie</span>
@@ -82,10 +89,14 @@
           <td class="text-muted small">{{ sol.created_at|date:"Y-m-d" }}</td>
           <td class="text-end" onclick="event.stopPropagation()">
             <div class="d-flex gap-1 justify-content-end">
-              <a href="{% url 'solution_detail' sol.pk %}" class="btn btn-sm btn-outline-primary" title="Szczegóły">
+              <a href="{% url 'solution_view' sol.pk %}" class="btn btn-sm btn-outline-primary" title="Podgląd">
                 <i class="bi bi-eye"></i></a>
+              {% if can_edit %}
+              <a href="{% url 'solution_detail' sol.pk %}" class="btn btn-sm btn-outline-secondary" title="Zarządzaj">
+                <i class="bi bi-tools"></i></a>
               <a href="{% url 'solution_edit' sol.pk %}" class="btn btn-sm btn-outline-secondary" title="Edytuj">
                 <i class="bi bi-pencil"></i></a>
+              {% endif %}
               {% if request.user.is_staff %}
               <a href="{% url 'solution_delete' sol.pk %}" class="btn btn-sm btn-outline-danger" title="Usuń">
                 <i class="bi bi-trash"></i></a>

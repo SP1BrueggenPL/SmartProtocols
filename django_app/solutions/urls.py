@@ -4,7 +4,9 @@ from . import views
 urlpatterns = [
     path('',                                   views.solution_list,         name='solution_list'),
     path('nowy/',                              views.solution_new,          name='solution_new'),
-    path('<int:pk>/',                          views.solution_detail,       name='solution_detail'),
+    path('import/',                            views.solution_import,       name='solution_import'),
+    path('<int:pk>/',                          views.solution_view,         name='solution_view'),
+    path('<int:pk>/zarzadzaj/',                views.solution_detail,       name='solution_detail'),
     path('<int:pk>/edytuj/',                   views.solution_edit,         name='solution_edit'),
     path('<int:pk>/usun/',                     views.solution_delete,       name='solution_delete'),
     path('<int:pk>/krok/<int:step>/toggle/',   views.solution_toggle_step,  name='solution_toggle_step'),
