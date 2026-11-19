@@ -17,10 +17,22 @@
       {% csrf_token %}
       <div class="row g-3">
 
-        <div class="col-12">
+        <div class="col-md-8">
           <label class="form-label fw-semibold">Nazwa projektu <span class="text-danger">*</span></label>
           <input type="text" name="name" class="form-control" required placeholder="np. AuditManager – moduł raportowania"
                  value="{% if sol %}{{ sol.name }}{% endif %}">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Dział</label>
+          <select name="department" class="form-select">
+            <option value="">— brak —</option>
+            {% for dept in departments %}
+            <option value="{{ dept.pk }}" {% if sol and sol.department_id == dept.pk %}selected{% endif %}>
+              {% if dept.parent_id %}— {% endif %}{{ dept.name }}
+            </option>
+            {% endfor %}
+          </select>
         </div>
 
         <div class="col-md-4">
@@ -42,13 +54,46 @@
           </select>
         </div>
 
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Data rozpoczęcia prac</label>
+          <input type="date" name="start_date" class="form-control"
+                 value="{% if sol and sol.start_date %}{{ sol.start_date|date:'Y-m-d' }}{% endif %}">
+        </div>
+
         <div class="col-12">
           <label class="form-label fw-semibold">Opis zapotrzebowania</label>
           <textarea name="description" class="form-control" rows="4"
                     placeholder="Opisz zapotrzebowanie, cel projektu, użytkownicy końcowi…">{% if sol %}{{ sol.description }}{% endif %}</textarea>
         </div>
 
-        <div class="col-12 d-flex gap-2">
+        <div class="col-12"><hr></div>
+        <div class="col-12">
+          <h6 class="fw-semibold text-muted mb-0"><i class="bi bi-shield-lock me-1"></i>Centrum administracyjne (opcjonalne)</h6>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Link do aplikacji</label>
+          <input type="url" name="app_url" class="form-control" placeholder="https://…"
+                 value="{% if sol %}{{ sol.app_url }}{% endif %}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Login administracyjny</label>
+          <input type="text" name="admin_login" class="form-control" autocomplete="off"
+                 value="{% if sol %}{{ sol.admin_login }}{% endif %}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Hasło administracyjne</label>
+          <input type="text" name="admin_password" class="form-control font-monospace" autocomplete="off"
+                 value="{% if sol %}{{ sol.admin_password }}{% endif %}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Data wdrożenia produkcyjnego</label>
+          <input type="date" name="production_date" class="form-control"
+                 value="{% if sol and sol.production_date %}{{ sol.production_date|date:'Y-m-d' }}{% endif %}">
+          <div class="form-text">Można też ustawić automatycznie krokiem 8 checklisty PDM.</div>
+        </div>
+
+        <div class="col-12 d-flex gap-2 mt-3">
           <button type="submit" class="btn btn-primary">
             <i class="bi bi-save me-1"></i>{% if sol %}Zapisz zmiany{% else %}Otwórz projekt{% endif %}
           </button>

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Strona główna{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column align-items-center justify-content-center" style="min-height:65vh">
+  <h3 class="fw-bold mb-1 text-center">Witaj, {{ user.get_full_name|default:user.username }}</h3>
+  <p class="text-muted mb-5 text-center">Wybierz moduł, z którego chcesz skorzystać</p>
+
+  <div class="row g-4 justify-content-center w-100" style="max-width:1000px">
+
+    <div class="col-md-4">
+      <a href="{% url 'dashboard' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 home-tile">
+          <div class="card-body text-center py-5">
+            <i class="bi bi-file-earmark-text display-3 text-primary mb-3 d-block"></i>
+            <h5 class="fw-bold text-dark mb-1">Smart Protocols</h5>
+            <p class="text-muted small mb-0">Protokoły, podpisy i dokumenty</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    {% if can_audit %}
+    <div class="col-md-4">
+      <a href="{% url 'audit_list' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 home-tile">
+          <div class="card-body text-center py-5">
+            <i class="bi bi-server display-3 text-success mb-3 d-block"></i>
+            <h5 class="fw-bold text-dark mb-1">Audit Manager</h5>
+            <p class="text-muted small mb-0">Audyty i inspekcje serwerowni</p>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endif %}
+
+    {% if can_solutions %}
+    <div class="col-md-4">
+      <a href="{% url 'solution_list' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 home-tile">
+          <div class="card-body text-center py-5">
+            <i class="bi bi-layers display-3 text-warning mb-3 d-block"></i>
+            <h5 class="fw-bold text-dark mb-1">Digital Solutions Admin Center</h5>
+            <p class="text-muted small mb-0">T&amp;I Wilga — kontrola wersji projektów</p>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% if user.is_staff %}
+<a href="{% url 'settings' %}" class="btn btn-dark rounded-circle shadow d-flex align-items-center justify-content-center"
+   style="position:fixed;bottom:24px;right:24px;width:56px;height:56px;z-index:1030" title="Ustawienia">
+  <i class="bi bi-gear-fill fs-5"></i>
+</a>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<style>
+.home-tile { transition: transform .15s ease, box-shadow .15s ease; }
+.home-tile:hover { transform: translateY(-4px); box-shadow: 0 .75rem 1.5rem rgba(0,0,0,.1) !important; }
+</style>
+{% endblock %}
