@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}{% if sol %}Edytuj {{ sol.name }}{% else %}Nowy projekt{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{% if sol %}{% url 'solution_detail' sol.pk %}{% else %}{% url 'solution_list' %}{% endif %}"
+     class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="mb-0 fw-bold">
+    <i class="bi bi-layers me-2 text-primary"></i>
+    {% if sol %}Edytuj projekt{% else %}Nowy projekt T&amp;I{% endif %}
+  </h4>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-4">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+
+        <div class="col-12">
+          <label class="form-label fw-semibold">Nazwa projektu <span class="text-danger">*</span></label>
+          <input type="text" name="name" class="form-control" required placeholder="np. AuditManager – moduł raportowania"
+                 value="{% if sol %}{{ sol.name }}{% endif %}">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Kategoria <span class="text-danger">*</span></label>
+          <select name="category" id="id_category" class="form-select" onchange="toggleTech()">
+            <option value="support"   {% if sol and sol.category == 'support'   %}selected{% endif %}>Prośba o wsparcie</option>
+            <option value="simple"    {% if not sol or sol.category == 'simple'  %}selected{% endif %}>Prosty proces</option>
+            <option value="extensive" {% if sol and sol.category == 'extensive' %}selected{% endif %}>Rozległy proces</option>
+          </select>
+        </div>
+
+        <div class="col-md-4" id="tech-field"
+             {% if not sol or sol.category != 'extensive' %}style="display:none"{% endif %}>
+          <label class="form-label fw-semibold">Technologia</label>
+          <select name="technology" class="form-select">
+            <option value="power_platform" {% if sol and sol.technology == 'power_platform' %}selected{% endif %}>Power Platform</option>
+            <option value="vibe_coding"    {% if sol and sol.technology == 'vibe_coding'    %}selected{% endif %}>Vibe Coding</option>
+            <option value="other"          {% if sol and sol.technology == 'other'           %}selected{% endif %}>Inne</option>
+          </select>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label fw-semibold">Opis zapotrzebowania</label>
+          <textarea name="description" class="form-control" rows="4"
+                    placeholder="Opisz zapotrzebowanie, cel projektu, użytkownicy końcowi…">{% if sol %}{{ sol.description }}{% endif %}</textarea>
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i>{% if sol %}Zapisz zmiany{% else %}Otwórz projekt{% endif %}
+          </button>
+          <a href="{% if sol %}{% url 'solution_detail' sol.pk %}{% else %}{% url 'solution_list' %}{% endif %}"
+             class="btn btn-outline-secondary">Anuluj</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function toggleTech() {
+  const cat = document.getElementById('id_category').value;
+  document.getElementById('tech-field').style.display = cat === 'extensive' ? '' : 'none';
+}
+</script>
+{% endblock %}
