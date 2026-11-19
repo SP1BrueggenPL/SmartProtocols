@@ -288,6 +288,15 @@ def document_edit(request, pk):
         doc.receiver_email     = request.POST.get('receiver_email', '').strip()
         doc.network_name       = request.POST.get('network_name', '').strip() if doc.doc_type == 'office' else ''
         doc.send_to_accounting = bool(request.POST.get('send_to_accounting'))
+        raw_date = request.POST.get('doc_date', '').strip()
+        if raw_date:
+            from datetime import date as _date
+            try:
+                doc.doc_date = _date.fromisoformat(raw_date)
+            except ValueError:
+                pass
+        else:
+            doc.doc_date = None
         doc.save()
 
         doc.items.all().delete()

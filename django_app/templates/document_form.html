@@ -120,6 +120,12 @@
                    value="{% if document %}{{ document.receiver_email }}{% endif %}">
           </div>
         </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Data podpisania</label>
+          <input type="date" name="doc_date" class="form-control"
+                 value="{{ document.doc_date_str }}">
+          <div class="form-text">Pozostaw puste — zostanie ustawiona automatycznie po złożeniu obu podpisów.</div>
+        </div>
         <div class="col-12">
           <div class="form-check form-switch mt-1">
             <input class="form-check-input" type="checkbox" name="send_to_accounting" id="send_to_accounting"
