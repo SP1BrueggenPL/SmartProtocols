@@ -131,6 +131,11 @@
           <input type="text" name="new_username" class="form-control form-control-sm"
                  placeholder="jkowalski" required autocomplete="off">
         </div>
+        <div class="col-md-3">
+          <label class="form-label form-label-sm fw-semibold mb-1">Email</label>
+          <input type="email" name="new_email" class="form-control form-control-sm"
+                 placeholder="jan.kowalski@brueggen.com" required autocomplete="off">
+        </div>
         <div class="col-md-2">
           <label class="form-label form-label-sm fw-semibold mb-1">Hasło</label>
           <input type="password" name="new_password" class="form-control form-control-sm"
@@ -146,7 +151,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-3 d-flex gap-2">
+        <div class="col-12 d-flex gap-2">
           <button type="submit" class="btn btn-sm btn-primary">
             <i class="bi bi-check me-1"></i>Dodaj
           </button>
@@ -173,16 +178,27 @@
         {% for u in users %}
         <tr>
           <td>
-            <strong>{{ u.get_full_name|default:u.username }}</strong>
-            {% if u.pk == request.user.pk %}
-              <span class="badge bg-primary ms-1">Ty</span>
-            {% endif %}
-            {% if u.must_change_pw %}
-              <span class="badge bg-warning-subtle text-warning border border-warning-subtle ms-1"
-                    title="Użytkownik musi zmienić hasło przy następnym logowaniu">
-                <i class="bi bi-key me-1"></i>Reset
-              </span>
-            {% endif %}
+            <div>
+              <strong>{{ u.get_full_name|default:u.username }}</strong>
+              {% if u.pk == request.user.pk %}
+                <span class="badge bg-primary ms-1">Ty</span>
+              {% endif %}
+              {% if u.must_change_pw %}
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle ms-1"
+                      title="Użytkownik musi zmienić hasło przy następnym logowaniu">
+                  <i class="bi bi-key me-1"></i>Reset
+                </span>
+              {% endif %}
+            </div>
+            <div class="small">
+              {% if u.email %}
+                <span class="text-muted">{{ u.email }}</span>
+              {% else %}
+                <span class="text-danger" title="Brak adresu email — nie zaciągnie się automatycznie w protokołach">
+                  <i class="bi bi-exclamation-triangle me-1"></i>brak emaila
+                </span>
+              {% endif %}
+            </div>
           </td>
           <td class="text-muted font-monospace small">{{ u.username }}</td>
           <td>
@@ -225,6 +241,14 @@
                 <i class="bi bi-three-dots"></i>
               </button>
               <ul class="dropdown-menu dropdown-menu-end" style="min-width:210px">
+
+                {# Edytuj użytkownika #}
+                <li>
+                  <a class="dropdown-item" href="#"
+                     onclick="showEditUser({{ u.pk }}, '{{ u.first_name }}', '{{ u.last_name }}', '{{ u.email }}'); return false;">
+                    <i class="bi bi-pencil-square me-2"></i>Edytuj użytkownika
+                  </a>
+                </li>
 
                 {# Reset hasła #}
                 <li>
@@ -293,6 +317,45 @@
     </table>
 </div>
 
+
+{# Modal: edytuj użytkownika #}
+<div class="modal fade" id="editUserModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Edytuj użytkownika</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action"  value="edit_user">
+        <input type="hidden" name="user_id" id="editUserId">
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Imię</label>
+            <input type="text" name="first_name" id="editUserFirstName" class="form-control">
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Nazwisko</label>
+            <input type="text" name="last_name" id="editUserLastName" class="form-control">
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Email</label>
+            <input type="email" name="email" id="editUserEmail"
+                   class="form-control" placeholder="jan.kowalski@brueggen.com" autocomplete="off">
+            <div class="form-text">Używany m.in. do automatycznego uzupełniania pola „Przekazujący" przy tworzeniu protokołu.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Anuluj</button>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check me-1"></i>Zapisz
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 {# Modal: reset hasła #}
 <div class="modal fade" id="resetPwModal" tabindex="-1">
@@ -398,6 +461,14 @@
 function toggleAddUser() {
   const el = document.getElementById('addUserForm');
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+function showEditUser(userId, firstName, lastName, email) {
+  document.getElementById('editUserId').value = userId;
+  document.getElementById('editUserFirstName').value = firstName;
+  document.getElementById('editUserLastName').value = lastName;
+  document.getElementById('editUserEmail').value = email;
+  new bootstrap.Modal(document.getElementById('editUserModal')).show();
+  setTimeout(() => document.getElementById('editUserEmail').focus(), 300);
 }
 function showResetPassword(userId, fullName) {
   document.getElementById('resetPwUserId').value = userId;

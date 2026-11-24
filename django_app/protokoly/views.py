@@ -557,6 +557,7 @@ def settings_view(request):
         elif action == 'add_user':
             username   = request.POST.get('new_username', '').strip()
             full_name  = request.POST.get('new_full_name', '').strip()
+            email      = request.POST.get('new_email', '').strip()
             password   = request.POST.get('new_password', '').strip()
             group_name = request.POST.get('new_group', 'Użytkownicy').strip()
             if username and full_name and password:
@@ -567,7 +568,7 @@ def settings_view(request):
                     is_admin_grp = (group_name == 'Administratorzy')
                     new_user = User.objects.create_user(
                         username=username, password=password,
-                        first_name=first, last_name=last,
+                        first_name=first, last_name=last, email=email,
                         is_staff=is_admin_grp,
                     )
                     try:
@@ -582,6 +583,23 @@ def settings_view(request):
                     messages.success(request, f'Użytkownik {username} dodany do grupy „{group_name}". Przy pierwszym logowaniu zostanie poproszony o zmianę hasła.')
             else:
                 messages.warning(request, 'Wypełnij wszystkie pola.')
+
+        elif action == 'edit_user':
+            user_id    = request.POST.get('user_id')
+            first_name = request.POST.get('first_name', '').strip()
+            last_name  = request.POST.get('last_name', '').strip()
+            email      = request.POST.get('email', '').strip()
+            if user_id:
+                try:
+                    u = User.objects.get(pk=user_id)
+                    u.first_name = first_name
+                    u.last_name  = last_name
+                    u.email      = email
+                    u.save()
+                    name = u.get_full_name() or u.username
+                    messages.success(request, f'Dane użytkownika „{name}" zaktualizowane.')
+                except User.DoesNotExist:
+                    pass
 
         elif action == 'reset_password':
             user_id  = request.POST.get('user_id')
