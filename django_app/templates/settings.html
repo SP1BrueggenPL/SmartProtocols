@@ -198,10 +198,6 @@
                   <i class="bi bi-exclamation-triangle me-1"></i>brak emaila
                 </span>
               {% endif %}
-              <a href="#" class="ms-1 text-decoration-none" title="Edytuj email"
-                 onclick="showEditEmail({{ u.pk }}, '{{ u.get_full_name|default:u.username }}', '{{ u.email }}'); return false;">
-                <i class="bi bi-pencil-square"></i>
-              </a>
             </div>
           </td>
           <td class="text-muted font-monospace small">{{ u.username }}</td>
@@ -245,6 +241,14 @@
                 <i class="bi bi-three-dots"></i>
               </button>
               <ul class="dropdown-menu dropdown-menu-end" style="min-width:210px">
+
+                {# Edytuj użytkownika #}
+                <li>
+                  <a class="dropdown-item" href="#"
+                     onclick="showEditUser({{ u.pk }}, '{{ u.first_name }}', '{{ u.last_name }}', '{{ u.email }}'); return false;">
+                    <i class="bi bi-pencil-square me-2"></i>Edytuj użytkownika
+                  </a>
+                </li>
 
                 {# Reset hasła #}
                 <li>
@@ -314,25 +318,33 @@
 </div>
 
 
-{# Modal: edytuj email #}
-<div class="modal fade" id="editEmailModal" tabindex="-1">
+{# Modal: edytuj użytkownika #}
+<div class="modal fade" id="editUserModal" tabindex="-1">
   <div class="modal-dialog modal-sm">
     <div class="modal-content">
       <div class="modal-header">
-        <h6 class="modal-title fw-bold"><i class="bi bi-envelope me-2"></i>Edytuj email</h6>
+        <h6 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Edytuj użytkownika</h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="post">
         {% csrf_token %}
-        <input type="hidden" name="action"  value="edit_email">
-        <input type="hidden" name="user_id" id="editEmailUserId">
+        <input type="hidden" name="action"  value="edit_user">
+        <input type="hidden" name="user_id" id="editUserId">
         <div class="modal-body">
-          <p class="mb-1 text-muted small">Adres email dla:</p>
-          <p class="fw-bold mb-3" id="editEmailName"></p>
-          <label class="form-label fw-semibold">Email</label>
-          <input type="email" name="email" id="editEmailInput"
-                 class="form-control" placeholder="jan.kowalski@brueggen.com" autocomplete="off">
-          <div class="form-text">Używany m.in. do automatycznego uzupełniania pola „Przekazujący" przy tworzeniu protokołu.</div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Imię</label>
+            <input type="text" name="first_name" id="editUserFirstName" class="form-control">
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Nazwisko</label>
+            <input type="text" name="last_name" id="editUserLastName" class="form-control">
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Email</label>
+            <input type="email" name="email" id="editUserEmail"
+                   class="form-control" placeholder="jan.kowalski@brueggen.com" autocomplete="off">
+            <div class="form-text">Używany m.in. do automatycznego uzupełniania pola „Przekazujący" przy tworzeniu protokołu.</div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Anuluj</button>
@@ -450,12 +462,13 @@ function toggleAddUser() {
   const el = document.getElementById('addUserForm');
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
-function showEditEmail(userId, fullName, email) {
-  document.getElementById('editEmailUserId').value = userId;
-  document.getElementById('editEmailName').textContent = fullName;
-  document.getElementById('editEmailInput').value = email;
-  new bootstrap.Modal(document.getElementById('editEmailModal')).show();
-  setTimeout(() => document.getElementById('editEmailInput').focus(), 300);
+function showEditUser(userId, firstName, lastName, email) {
+  document.getElementById('editUserId').value = userId;
+  document.getElementById('editUserFirstName').value = firstName;
+  document.getElementById('editUserLastName').value = lastName;
+  document.getElementById('editUserEmail').value = email;
+  new bootstrap.Modal(document.getElementById('editUserModal')).show();
+  setTimeout(() => document.getElementById('editUserEmail').focus(), 300);
 }
 function showResetPassword(userId, fullName) {
   document.getElementById('resetPwUserId').value = userId;

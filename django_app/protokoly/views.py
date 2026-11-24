@@ -584,16 +584,20 @@ def settings_view(request):
             else:
                 messages.warning(request, 'Wypełnij wszystkie pola.')
 
-        elif action == 'edit_email':
-            user_id = request.POST.get('user_id')
-            email   = request.POST.get('email', '').strip()
+        elif action == 'edit_user':
+            user_id    = request.POST.get('user_id')
+            first_name = request.POST.get('first_name', '').strip()
+            last_name  = request.POST.get('last_name', '').strip()
+            email      = request.POST.get('email', '').strip()
             if user_id:
                 try:
                     u = User.objects.get(pk=user_id)
-                    u.email = email
+                    u.first_name = first_name
+                    u.last_name  = last_name
+                    u.email      = email
                     u.save()
                     name = u.get_full_name() or u.username
-                    messages.success(request, f'Email użytkownika „{name}" zaktualizowany.')
+                    messages.success(request, f'Dane użytkownika „{name}" zaktualizowane.')
                 except User.DoesNotExist:
                     pass
 
